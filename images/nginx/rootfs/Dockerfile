@@ -31,12 +31,14 @@ ENV LUA_CPATH="/usr/local/lib/lua/?/?.so;/usr/local/lib/lua/?.so;;"
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /opt /opt
 COPY --from=builder /etc/nginx /etc/nginx
+COPY --from=builder /tmp/build/openssl-bin/bin /usr/bin
+COPY --from=builder /tmp/build/openssl-bin/lib /lib
+COPY --from=builder /etc/ssl /etc/ssl
 
 RUN apk update \
   && apk upgrade \
   && apk add -U --no-cache \
     bash \
-    openssl \
     pcre \
     zlib \
     geoip \

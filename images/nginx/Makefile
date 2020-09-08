@@ -13,24 +13,26 @@
 # limitations under the License.
 
 .DEFAULT_GOAL:=build
-
+DATE := $(shell date +%Y%m%d)
+GIT_COMMIT := $(shell git log -1 --pretty=format:%h)
 # set default shell
-SHELL=/bin/bash -o pipefail -o errexit
+SHELL = /bin/bash -o pipefail -o errexit
 
-DIR:=$(strip $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
+DIR := $(strip $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
 INIT_BUILDX=$(DIR)/../../hack/init-buildx.sh
 
 # 0.0.0 shouldn't clobber any released builds
-TAG ?= 0.0
-REGISTRY ?= gcr.io/k8s-staging-ingress-nginx
+TAG ?= $(DATE)-$(GIT_COMMIT)
+REGISTRY ?= infoblox
 
-IMAGE = $(REGISTRY)/nginx
+IMAGE = $(REGISTRY)/nginx-fips
 
 # required to enable buildx
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # build with buildx
-PLATFORMS?=linux/amd64,linux/arm,linux/arm64,linux/s390x
+PLATFORMS?=linux/amd64
+# other possible platforms linux/arm,linux/arm64,linux/s390x
 OUTPUT=
 PROGRESS=plain
 build: ensure-buildx
