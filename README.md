@@ -48,6 +48,30 @@ For detailed changes for each release; please check the [Changelog.md](Changelog
   - The [github issues](https://github.com/kubernetes/ingress-nginx/issues) in the repository are **exclusively** for bug reports and feature requests.
 - **Discuss**: Tweet using the `#IngressNginx` hashtag
 
+## Build controller with nginx-fips
+Build and push nginx-fips image
+[nginx readme](https://github.com/infobloxopen/ingress-nginx/blob/master/images/nginx/README.md)
+
+Set `BASE_IMAGE` env to nginx-fips image
+
+`export BASE_IMAGE=infoblox/nginx-fips:20200908-bcd33a8d2`
+
+Set `REGISTRY` env to controller docker hub repo
+
+`export REGISTRY=<your docker registry>`
+
+Set `TAG` env to your image version
+`export TAG=<your image tag>`
+
+Build image
+`make image`
+
+Build and push
+`make release`
+
+
+ 
+
 ## Issues
 
 Please make sure to read the [Issue Reporting Checklist](https://github.com/kubernetes/ingress-nginx/blob/master/CONTRIBUTING.md#issue-reporting-guidelines) before opening an issue. Issues not conforming to the guidelines **may be closed immediately**.

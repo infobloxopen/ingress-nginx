@@ -54,6 +54,9 @@ export LUA_RESTY_LOCK=0.08
 export LUA_RESTY_UPLOAD_VERSION=0.10
 export LUA_RESTY_STRING_VERSION=0.12
 
+export OPENSSL_VERSION=1.0.2u
+export OPENSSL_FIPS_VERSION=2.0.16
+
 export BUILD_PATH=/tmp/build
 
 ARCH=$(uname -m)
@@ -83,7 +86,6 @@ apk add \
   libc-dev \
   make \
   automake \
-  openssl-dev \
   pcre-dev \
   zlib-dev \
   linux-headers \
@@ -98,7 +100,6 @@ apk add \
   curl ca-certificates \
   patch \
   libaio-dev \
-  openssl \
   cmake \
   util-linux \
   lmdb-tools \
@@ -111,7 +112,10 @@ apk add \
   bc \
   unzip \
   dos2unix \
-  yaml-cpp
+  yaml-cpp \
+  coreutils \
+  perl \
+  gzip
 
 mkdir -p /etc/nginx
 
@@ -212,6 +216,18 @@ get_src 4aca34f324d543754968359672dcf5f856234574ee4da360ce02c778d244572a \
 get_src 987d5754a366d3ccbf745d2765f82595dcff5b94ba6c755eeb6d310447996f32 \
         "https://github.com/ledgetech/lua-resty-http/archive/v$LUA_RESTY_HTTP.tar.gz"
 
+# download, verify and extract the openssl source files
+get_src a3cd13d0521d22dd939063d3b4a0d4ce24494374b91408a05bdaca8b681c63d4 \
+        "https://www.openssl.org/source/openssl-fips-$OPENSSL_FIPS_VERSION.tar.gz"
+
+get_src ecd0c6ffb493dd06707d38b14bb4d8c2288bb7033735606569d8f90f89669d16 \
+        "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz"
+
+# Compile the OpenSSL FIPS module first, as it doesn't seem to play well with parallel compilation
+cd "$BUILD_PATH/openssl-fips-$OPENSSL_FIPS_VERSION"
+./config
+make
+make install
 
 # improve compilation times
 CORES=$(($(grep -c ^processor /proc/cpuinfo) - 0))
@@ -225,6 +241,17 @@ export HUNTER_USE_CACHE_SERVERS=true
 export LUAJIT_LIB=/usr/local/lib
 export LUA_LIB_DIR="$LUAJIT_LIB/lua"
 export LUAJIT_INC=/usr/local/include/luajit-2.1
+
+mkdir -p $BUILD_PATH/openssl-bin/
+cd "$BUILD_PATH/openssl-$OPENSSL_VERSION"
+perl ./Configure linux-x86_64 --prefix=$BUILD_PATH/openssl-bin \
+                              --libdir=lib \
+                              --openssldir=/etc/ssl \
+                              fips shared zlib enable-montasm \
+                              -DOPENSSL_NO_BUF_FREELISTS \
+                              -Wa,--noexecstack enable-ssl2
+make
+make install_sw
 
 cd "$BUILD_PATH/luajit2-$LUAJIT_VERSION"
 make CCDEBUG=-g
@@ -520,6 +547,8 @@ WITH_MODULES="--add-module=$BUILD_PATH/ngx_devel_kit-$NDK_VERSION \
   --without-http_scgi_module \
   --with-cc-opt="${CC_OPT}" \
   --with-ld-opt="${LD_OPT}" \
+  --with-openssl="${BUILD_PATH}/openssl-$OPENSSL_VERSION" \
+  --with-openssl-opt="fips shared zlib enable-montasm -DOPENSSL_NO_BUF_FREELISTS -Wa,--noexecstack enable-ssl2" \
   --user=www-data \
   --group=www-data \
   ${WITH_MODULES}
