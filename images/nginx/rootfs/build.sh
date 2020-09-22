@@ -54,8 +54,10 @@ export LUA_RESTY_LOCK=0.08
 export LUA_RESTY_UPLOAD_VERSION=0.10
 export LUA_RESTY_STRING_VERSION=0.12
 
-export OPENSSL_VERSION=1.0.2u
-export OPENSSL_FIPS_VERSION=2.0.16
+export CMAKE_VERSION=3.18.3
+export LIBMAXMINDDB_VERSION=1.4.3
+export LMDB_VERSION=0.9.24
+export YAML_CPP_VERSION=0.6.3
 
 export BUILD_PATH=/tmp/build
 
@@ -75,47 +77,47 @@ get_src()
   rm -rf "$f"
 }
 
-apk update
-apk upgrade
+yum -y update
+yum -y upgrade
 
 # install required packages to build
-apk add \
-  bash \
+yum -y install \
   gcc \
+  gcc-c++ \
   clang \
-  libc-dev \
+  glibc \
+  glibc-devel \
   make \
   automake \
-  pcre-dev \
-  zlib-dev \
-  linux-headers \
-  libxslt-dev \
-  gd-dev \
-  geoip-dev \
-  perl-dev \
-  libedit-dev \
+  pcre-devel \
+  zlib-devel \
+  kernel-headers \
+  libxslt-devel \
+  gd-devel \
+  geoip-devel \
+  perl-devel \
+  libedit-devel \
   mercurial \
-  alpine-sdk \
   findutils \
   curl ca-certificates \
   patch \
-  libaio-dev \
-  cmake \
+  libaio-devel \
   util-linux \
-  lmdb-tools \
   wget \
-  curl-dev \
-  libprotobuf \
-  git g++ pkgconf flex bison doxygen yajl-dev lmdb-dev libtool autoconf libxml2 libxml2-dev \
+  protobuf \
+  git pkgconfig flex bison doxygen yajl-devel libtool autoconf libxml2 libxml2-devel \
   python3 \
-  libmaxminddb-dev \
   bc \
   unzip \
   dos2unix \
-  yaml-cpp \
   coreutils \
   perl \
-  gzip
+  gzip \
+  openssl \
+  openssl-devel \
+  libcurl-devel \
+  libyaml \
+  libyaml-devel
 
 mkdir -p /etc/nginx
 
@@ -216,18 +218,14 @@ get_src 4aca34f324d543754968359672dcf5f856234574ee4da360ce02c778d244572a \
 get_src 987d5754a366d3ccbf745d2765f82595dcff5b94ba6c755eeb6d310447996f32 \
         "https://github.com/ledgetech/lua-resty-http/archive/v$LUA_RESTY_HTTP.tar.gz"
 
-# download, verify and extract the openssl source files
-get_src a3cd13d0521d22dd939063d3b4a0d4ce24494374b91408a05bdaca8b681c63d4 \
-        "https://www.openssl.org/source/openssl-fips-$OPENSSL_FIPS_VERSION.tar.gz"
+get_src 2c89f4e30af4914fd6fb5d00f863629812ada848eee4e2d29ec7e456d7fa32e5 \
+        "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.tar.gz"
 
-get_src ecd0c6ffb493dd06707d38b14bb4d8c2288bb7033735606569d8f90f89669d16 \
-        "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz"
+get_src a5fdf6c7b4880fdc7620f8ace5bd5cbe9f65650c9493034b5b9fc7d83551a439 \
+        "https://github.com/maxmind/libmaxminddb/releases/download/$LIBMAXMINDDB_VERSION/libmaxminddb-$LIBMAXMINDDB_VERSION.tar.gz"
 
-# Compile the OpenSSL FIPS module first, as it doesn't seem to play well with parallel compilation
-cd "$BUILD_PATH/openssl-fips-$OPENSSL_FIPS_VERSION"
-./config
-make
-make install
+get_src 44602436c52c29d4f301f55f6fd8115f945469b868348e3cddaf91ab2473ea26 \
+        "https://github.com/LMDB/lmdb/archive/LMDB_$LMDB_VERSION.tar.gz"
 
 # improve compilation times
 CORES=$(($(grep -c ^processor /proc/cpuinfo) - 0))
@@ -242,17 +240,6 @@ export LUAJIT_LIB=/usr/local/lib
 export LUA_LIB_DIR="$LUAJIT_LIB/lua"
 export LUAJIT_INC=/usr/local/include/luajit-2.1
 
-mkdir -p $BUILD_PATH/openssl-bin/
-cd "$BUILD_PATH/openssl-$OPENSSL_VERSION"
-perl ./Configure linux-x86_64 --prefix=$BUILD_PATH/openssl-bin \
-                              --libdir=lib \
-                              --openssldir=/etc/ssl \
-                              fips shared zlib enable-montasm \
-                              -DOPENSSL_NO_BUF_FREELISTS \
-                              -Wa,--noexecstack enable-ssl2
-make
-make install_sw
-
 cd "$BUILD_PATH/luajit2-$LUAJIT_VERSION"
 make CCDEBUG=-g
 make install
@@ -263,6 +250,15 @@ cd "$BUILD_PATH"
 
 # Git tuning
 git config --global --add core.compression -1
+
+cd "$BUILD_PATH/cmake-$CMAKE_VERSION"
+./bootstrap
+make
+make install
+
+cd "$BUILD_PATH/lmdb-LMDB_$LMDB_VERSION/libraries/liblmdb"
+make
+make install
 
 # build opentracing lib
 cd "$BUILD_PATH/opentracing-cpp-$OPENTRACING_CPP_VERSION"
@@ -457,6 +453,13 @@ Include /etc/nginx/owasp-modsecurity-crs/rules/RESPONSE-980-CORRELATION.conf
 Include /etc/nginx/owasp-modsecurity-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
 " > /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf
 
+# build maxminddb
+cd "$BUILD_PATH/libmaxminddb-$LIBMAXMINDDB_VERSION"
+./configure
+make
+make install
+ldconfig
+
 # build nginx
 cd "$BUILD_PATH/nginx-$NGINX_VERSION"
 
@@ -547,8 +550,6 @@ WITH_MODULES="--add-module=$BUILD_PATH/ngx_devel_kit-$NDK_VERSION \
   --without-http_scgi_module \
   --with-cc-opt="${CC_OPT}" \
   --with-ld-opt="${LD_OPT}" \
-  --with-openssl="${BUILD_PATH}/openssl-$OPENSSL_VERSION" \
-  --with-openssl-opt="fips shared zlib enable-montasm -DOPENSSL_NO_BUF_FREELISTS -Wa,--noexecstack enable-ssl2" \
   --user=www-data \
   --group=www-data \
   ${WITH_MODULES}
@@ -640,8 +641,9 @@ writeDirs=( \
   /var/log/nginx \
 );
 
-addgroup -Sg 101 www-data
-adduser -S -D -H -u 101 -h /usr/local/nginx -s /sbin/nologin -G www-data -g www-data www-data
+groupadd -rg 101 www-data
+adduser -u 101 -M -d /usr/local/nginx \
+     -s /sbin/nologin -G www-data -g www-data www-data
 
 for dir in "${writeDirs[@]}"; do
   mkdir -p ${dir};

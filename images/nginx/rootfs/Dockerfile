@@ -13,31 +13,28 @@
 # limitations under the License.
 
 
-FROM alpine:3.11 as builder
+FROM amazonlinux:2 as builder
 
 COPY . /
 
-RUN apk add -U bash \
-  && /build.sh
+RUN /build.sh
 
 # Use a multi-stage build
-FROM alpine:3.11
+FROM amazonlinux:2
 
-ENV PATH=$PATH:/usr/local/luajit/bin:/usr/local/nginx/sbin:/usr/local/nginx/bin
+ENV PATH=$PATH:/usr/local/luajit/bin:/usr/local/nginx/sbin:/usr/local/nginx/bin:/usr/local/lib
 
 ENV LUA_PATH="/usr/local/share/luajit-2.1.0-beta3/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/lib/lua/?.lua;;"
 ENV LUA_CPATH="/usr/local/lib/lua/?/?.so;/usr/local/lib/lua/?.so;;"
+ENV LD_LIBRARY_PATH="/usr/local/lib"
 
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /opt /opt
 COPY --from=builder /etc/nginx /etc/nginx
-COPY --from=builder /tmp/build/openssl-bin/bin /usr/bin
-COPY --from=builder /tmp/build/openssl-bin/lib /lib
-COPY --from=builder /etc/ssl /etc/ssl
 
-RUN apk update \
-  && apk upgrade \
-  && apk add -U --no-cache \
+RUN yum -y update \
+  && yum -y upgrade \
+  && yum -y install \
     bash \
     pcre \
     zlib \
@@ -47,15 +44,18 @@ RUN apk update \
     yajl \
     lmdb \
     libxml2 \
-    libmaxminddb \
-    yaml-cpp \
+    libyaml \
     dumb-init \
     nano \
     tzdata \
+    shadow-utils \
+    openssl \
+  && yum clean all \
+  && rm -rf /var/cache/yum \
   && ln -s /usr/local/nginx/sbin/nginx /sbin/nginx \
-  && addgroup -Sg 101 www-data \
-  && adduser -S -D -H -u 101 -h /usr/local/nginx \
-    -s /sbin/nologin -G www-data -g www-data www-data \
+  && groupadd -rg 101 www-data \
+  && adduser -u 101 -M -d /usr/local/nginx \
+     -s /sbin/nologin -G www-data -g www-data www-data \
   && bash -eu -c ' \
   writeDirs=( \
     /var/log/nginx \
