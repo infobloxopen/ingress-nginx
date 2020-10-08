@@ -13,13 +13,15 @@
 # limitations under the License.
 
 # 0.0.0 shouldn't clobber any released builds
-TAG ?= 0.96
-REGISTRY ?= quay.io/kubernetes-ingress-controller
+TAG ?= nginx-v0.27.1
+REGISTRY ?= infoblox
 
-IMGNAME = nginx
+IMGNAME = nginx-fips
 IMAGE = $(REGISTRY)/$(IMGNAME)
 
-PLATFORMS = amd64 arm arm64
+
+PLATFORMS = amd64
+# other platforms arm arm64
 
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
@@ -34,26 +36,9 @@ container:
 		--platform $(subst $(SPACE),$(COMMA),$(PLATFORMS)) \
 		--tag $(IMAGE):$(TAG) rootfs
 
-	# https://github.com/docker/buildx/issues/59
-	$(foreach PLATFORM,$(PLATFORMS), \
-			DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build \
-			--load \
-			--progress plain \
-			--platform $(PLATFORM) \
-			--tag $(IMAGE)-$(PLATFORM):$(TAG) rootfs;)
-
-ifeq ($(ARCH), amd64)
-	# This is for to maintain the backward compatibility
-	docker tag $(MULTI_ARCH_IMG):$(TAG) $(IMAGE):$(TAG)
-endif
-
 push: container
-	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):$(TAG);)
-
-ifeq ($(ARCH), amd64)
 	docker push $(IMAGE):$(TAG)
-endif
+
 
 release: push
 	echo "done"

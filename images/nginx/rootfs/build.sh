@@ -48,6 +48,7 @@ export LUAJIT_VERSION=9d5750d28478abfdcaefdfdc408f87752a21e431
 export LUA_RESTY_BALANCER=0.03
 export LUA_RESTY_CORE=0.1.17
 export LUA_CJSON_VERSION=2.1.0.7
+export LIBMAXMINDDB_VERSION=1.4.3
 
 export BUILD_PATH=/tmp/build
 
@@ -66,48 +67,53 @@ get_src()
   tar xzf "$f"
   rm -rf "$f"
 }
-
-apk update
-apk upgrade
+# add epel repo
+yum -y install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum -y update
+yum -y upgrade
 
 # install required packages to build
-apk add \
-  bash \
+yum -y install \
   gcc \
+  gcc-c++ \
   clang \
-  libc-dev \
+  glibc \
+  glibc-devel \
   make \
   automake \
-  openssl-dev \
-  pcre-dev \
-  zlib-dev \
-  linux-headers \
-  libxslt-dev \
-  gd-dev \
-  geoip-dev \
-  perl-dev \
-  libedit-dev \
+  pcre-devel \
+  zlib-devel \
+  kernel-headers \
+  libxslt-devel \
+  gd-devel \
+  geoip-devel \
+  perl-devel \
+  libedit-devel \
   mercurial \
-  alpine-sdk \
   findutils \
   curl ca-certificates \
-  geoip-dev \
   patch \
-  libaio-dev \
-  openssl \
-  cmake \
+  libaio-devel \
   util-linux \
-  lmdb-tools \
   wget \
-  curl-dev \
-  libprotobuf \
-  git g++ pkgconf flex bison doxygen yajl-dev lmdb-dev libtool autoconf libxml2 pcre-dev libxml2-dev \
-  python \
-  libmaxminddb-dev \
+  protobuf \
+  git pkgconfig flex bison doxygen yajl-devel libtool autoconf libxml2 libxml2-devel \
+  python3 \
   bc \
   unzip \
-  dos2unix mercurial \
-  yaml-cpp
+  dos2unix \
+  coreutils \
+  perl \
+  gzip \
+  openssl \
+  openssl-devel \
+  libcurl-devel \
+  libyaml \
+  libyaml-devel \
+  cmake3 \
+  lmdb \
+  lmdb-libs \
+  lmdb-devel
 
 mkdir -p /etc/nginx
 
@@ -212,6 +218,9 @@ get_src 8f5f76d2689a3f6b0782f0a009c56a65e4c7a4382be86422c9b3549fe95b0dc4 \
 get_src 59d2f18ecadba48be61061004c8664eaed1111a3372cd2567cb24c5a47eb41fe \
         "https://github.com/openresty/lua-cjson/archive/$LUA_CJSON_VERSION.tar.gz"
 
+get_src a5fdf6c7b4880fdc7620f8ace5bd5cbe9f65650c9493034b5b9fc7d83551a439 \
+        "https://github.com/maxmind/libmaxminddb/releases/download/$LIBMAXMINDDB_VERSION/libmaxminddb-$LIBMAXMINDDB_VERSION.tar.gz"
+
 # improve compilation times
 CORES=$(($(grep -c ^processor /proc/cpuinfo) - 0))
 
@@ -252,7 +261,7 @@ cd "$BUILD_PATH/opentracing-cpp-$OPENTRACING_CPP_VERSION"
 mkdir .build
 cd .build
 
-cmake   -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_FLAGS="-fPIC" \
         -DBUILD_TESTING=OFF \
         -DBUILD_MOCKTRACER=OFF \
@@ -277,7 +286,7 @@ EOF
   mkdir .build
   cd .build
 
-  cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
         -DBUILD_TESTING=OFF \
         -DJAEGERTRACING_BUILD_EXAMPLES=OFF \
         -DJAEGERTRACING_BUILD_CROSSDOCK=OFF \
@@ -308,7 +317,7 @@ EOF
 mkdir .build
 cd .build
 
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=ON \
       -DBUILD_PLUGIN=ON \
       -DBUILD_TESTING=OFF ..
@@ -321,7 +330,7 @@ cd "$BUILD_PATH/msgpack-c-cpp-$MSGPACK_VERSION"
 
 mkdir .build
 cd .build
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_FLAGS="-fPIC" \
         -DBUILD_SHARED_LIBS=OFF \
         -DBUILD_TESTING=OFF \
@@ -336,7 +345,7 @@ cd "$BUILD_PATH/dd-opentracing-cpp-$DATADOG_CPP_VERSION"
 
 mkdir .build
 cd .build
-cmake ..
+cmake3 ..
 
 make
 make install
@@ -428,6 +437,13 @@ Include /etc/nginx/owasp-modsecurity-crs/rules/RESPONSE-959-BLOCKING-EVALUATION.
 Include /etc/nginx/owasp-modsecurity-crs/rules/RESPONSE-980-CORRELATION.conf
 Include /etc/nginx/owasp-modsecurity-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
 " > /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf
+
+# build maxminddb
+cd "$BUILD_PATH/libmaxminddb-$LIBMAXMINDDB_VERSION"
+./configure
+make
+make install
+ldconfig
 
 # build nginx
 cd "$BUILD_PATH/nginx-$NGINX_VERSION"
@@ -575,7 +591,7 @@ make install
 cd "$BUILD_PATH/lua-bridge-tracer-$LUA_BRIDGE_TRACER_VERSION"
 mkdir .build
 cd .build
-cmake ..
+cmake3 ..
 make
 make install
 
@@ -585,7 +601,7 @@ git clone https://github.com/microsoft/mimalloc
 cd mimalloc
 mkdir -p out/release
 cd out/release
-cmake ../..
+cmake3 ../..
 make
 make install
 
@@ -600,8 +616,9 @@ writeDirs=( \
   /var/log/nginx \
 );
 
-addgroup -Sg 101 www-data
-adduser -S -D -H -u 101 -h /usr/local/nginx -s /sbin/nologin -G www-data -g www-data www-data
+groupadd -rg 101 www-data
+adduser -u 101 -M -d /usr/local/nginx \
+     -s /sbin/nologin -G www-data -g www-data www-data
 
 for dir in "${writeDirs[@]}"; do
   mkdir -p ${dir};
