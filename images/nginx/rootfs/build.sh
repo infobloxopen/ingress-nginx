@@ -616,6 +616,9 @@ writeDirs=( \
   /var/log/nginx \
 );
 
+#addgroup -Sg 101 www-data
+#adduser -S -D -H -u 101 -h /usr/local/nginx -s /sbin/nologin -G www-data -g www-data www-data
+# Amazon Linux 2 does not have addgroup command, adduser uses different flag than alpine linux
 groupadd -rg 101 www-data
 adduser -u 101 -M -d /usr/local/nginx \
      -s /sbin/nologin -G www-data -g www-data www-data

@@ -14,7 +14,6 @@
 
 # Add the following 'help' target to your Makefile
 # And add help text after each target name starting with '\#\#'
-export DOCKER_CLI_EXPERIMENTAL=enabled
 
 .DEFAULT_GOAL:=help
 
@@ -28,7 +27,7 @@ endif
 SHELL = /bin/bash
 
 # Use the 0.0 tag for testing, it shouldn't clobber any release builds
-TAG ?= v0.27.1
+TAG ?= master
 DOCKER ?= docker
 
 # Use docker to run makefile tasks
@@ -55,15 +54,14 @@ GIT_COMMIT ?= git-$(shell git rev-parse --short HEAD)
 
 PKG = k8s.io/ingress-nginx
 
-ALL_ARCH = amd64 
-# available ARCH arm arm64
+ALL_ARCH ?= amd64 arm arm64
 
 BUSTED_ARGS =-v --pattern=_test
 
 ARCH ?= $(shell go env GOARCH)
 
-REGISTRY ?= infoblox
-IMAGE = $(REGISTRY)/nginx-fips
+REGISTRY ?= quay.io/kubernetes-ingress-controller
+MULTI_ARCH_IMAGE ?= $(REGISTRY)/nginx-ingress-controller-${ARCH}
 
 GOHOSTOS ?= $(shell go env GOHOSTOS)
 GOARCH = ${ARCH}
@@ -80,7 +78,7 @@ endif
 GO111MODULE=off
 
 # Set default base image dynamically for each arch
-BASEIMAGE ?= $(IMAGE):nginx-$(TAG)
+BASEIMAGE ?= quay.io/kubernetes-ingress-controller/nginx-$(ARCH):26f574dc279aa853736d7f7249965e90e47171d6
 
 TEMP_DIR := $(shell mktemp -d)
 DOCKERFILE := $(TEMP_DIR)/rootfs/Dockerfile
@@ -125,12 +123,11 @@ container: clean-container .container-$(ARCH) ## Build image for a particular ar
 		--load \
 		--progress plain \
 		--platform linux/$(ARCH) \
-		--build-arg BASEIMAGE="$(BASEIMAGE)" \
-		-t $(IMAGE):$(TAG) $(TEMP_DIR)/rootfs
+		-t $(MULTI_ARCH_IMAGE):$(TAG) $(TEMP_DIR)/rootfs
 
 .PHONY: clean-container
 clean-container: ## Removes local image
-	@$(DOCKER) rmi -f $(IMAGE):$(TAG) || true
+	@$(DOCKER) rmi -f $(MULTI_ARCH_IMAGE):$(TAG) || true
 
 .PHONY: push
 push: .push-$(ARCH) ## Publish image for a particular arch.
@@ -138,7 +135,7 @@ push: .push-$(ARCH) ## Publish image for a particular arch.
 # internal task
 .PHONY: .push-$(ARCH)
 .push-$(ARCH):
-	$(DOCKER) push $(IMAGE):$(TAG)
+	$(DOCKER) push $(MULTI_ARCH_IMAGE):$(TAG)
 
 .PHONY: build
 build: check-go-version ## Build ingress controller, debug tool and pre-stop hook.

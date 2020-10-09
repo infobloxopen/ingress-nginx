@@ -33,4 +33,4 @@ docker-build:
 docker-push:
 	docker push $(IMAGE):$(TAG)
 	docker tag $(IMAGE):$(TAG) $(IMAGE):e2e-latest
-	docker push $(IMAGE):latest
+	docker push $(IMAGE):e2e-latest
