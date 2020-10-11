@@ -36,6 +36,10 @@ RUN touch /etc/ld.so.conf.d/local_libs.conf \
   && echo "/usr/local/lib/lua" >> /etc/ld.so.conf.d/local_libs.conf \
   && echo "/usr/local/lib/mimalloc-1.6" >> /etc/ld.so.conf.d/local_libs.conf \
   && ldconfig -v
+  
+RUN yum -y install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+  && yum -y update \
+  && yum -y upgrade
 
 RUN yum -y update \
   && yum -y upgrade \
