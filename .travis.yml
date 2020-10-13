@@ -16,7 +16,6 @@ language: go
 go:
 - 1.13.x
 
-
 env:
   global:
   - REGISTRY=infoblox
@@ -33,14 +32,14 @@ script:
   - export TAG=nginx-v0.27.1
   - export PROJECT_DIR=${PWD}
   - cd ${PWD}/images/nginx/
-  #- make container
-  #- make fips-test 
+  - make container
+  - make fips-test 
   - cd ${PROJECT_DIR}
   - export BASEIMAGE=${REGISTRY}/nginx-fips:${TAG}
   - export TAG=v0.27.1
-  #- make test
-  #- make build && make build-plugin
-  #- make container    
+  - make test
+  - make build && make build-plugin
+  - make container    
 deploy:
   on:
     branch: 0.27.1-test-travis
