@@ -1,4 +1,4 @@
-FROM docker.io/infoblox/nginx-fips:e2e-v10082020-1cb0afb61 AS BASE
+FROM quay.io/kubernetes-ingress-controller/e2e:v01142020-3f0df1c35 AS BASE
 
 FROM alpine:3.11
 
