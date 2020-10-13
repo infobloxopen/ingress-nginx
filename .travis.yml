@@ -1,50 +1,29 @@
-sudo: required
-dist: focal
+dist: trusty
 
-before_install:
-- curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-- sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu
-  $(lsb_release -cs) stable"
-- sudo apt-get update
-- sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
-- docker pull amazonlinux:2
+sudo: required
 
 services:
-- docker
+  - docker
 
-language: go
-go:
-- 1.13.x
+language: generic
 
+notifications:
+  email:
+    on_failure: always
+    on_success: never
 
+# New secure variables can be added using travis encrypt -r kubernetes/ingress-nginx --add K=V
 env:
   global:
-  - REGISTRY=infoblox
-  - IMGNAME=nginx-fips
-  - PLATFORMS=amd64
-  - ARCH=amd64
-  - MULTI_ARCH_IMAGE=${REGISTRY}/nginx-fips-${ARCH}
-  - DOCKER_CLI_EXPERIMENTAL=enabled
-  - secure: eTDRq224lR7726xiqa/Z6alNiSkJqVOkafKDe29luLAYkbaJH2i3VKtL5e8AXwD+FkGOR3H9XLlqGBpxDtgMol82LPuA2oXUHVXZmHf0a7cRLJACUSiOXgwijbwDRFiShaACc9dqKgYu+Zwli2JL/2lr+LFMaw3+wBJgG5D/5bhJYS5Hn2mPV0xYpdXMc3x9ayMCZBRkrGGqP9MQJLtuHM+ahyD3jMg8hwaOmMhK2lFPhqXp+ue6Dx+dDGL0bDFKDgrIc3fu3rA8LCBoeRMNH1pRELWLbZFu3/Z92gmeXaAl/OCD8yF4VH5NtHj7ht0sHQopma+RBKXSFKHumjuI2g1t9QZE4JZl7ubLiBE71rRwDJKOnJM1NMSJYV4M4k/IwI11Fqu9td1PC16C7mhIGdTp9yBWCs8AHpa6M5Jzjjw3h3PDZTPktjZ8J0Lc4PUgmWfigrABw7S4YpaQl0bgP/NGLxb102wJVkSrQmxRl44SttJSVhGAPcazX8oaRw0nm3JryuHZg6dvzem0/eFQRS2aJ/YoRA1Xplwz+Cc1KSpQpVRMeybk7nuBTZnBNnoBbIk1tpuVNlb4wLcn5WFR7ibzvm4Az9QXVKTvH3geeOzFWI9KZRUVghJ30+GNO/mNRIcE7VKdMHeCPKRDeRc3OCvu2dY+V9K152ET8sIIsJo=
-  - secure: CGHsVr9H4+9p2l78U05JEGvz0iViLZZEVxlZH5xkCgJnhWMLd6btYsFOFnyRq4AD7PObp2QjFx/uzm6SAcjjv+zFU6kM5YzrrVNe5/Pfs6/ZVHNkUB4ij2nAQauZ13YtrZZlQ6x1/uD8yuIRN6etGsDDWnR+c7BCDrYWRaLAAZXtmMJQw7CAITtIJBop8P0j6rG5LH9RxPEHkf2bTA4WqBuMedC5ZrgtPIe2Pw71Urvf73HIM/f7hzk51yvLOLzGsjGbLPpP3p5NM9dCAnPrgOJDK30+YqsZGHKyYBnUaT1G3fKFODZu8TLmLC5KKIVtg9xfYJC+dB9B+MqbZHD1UONB2LdjSzlDqsvH4VX4PXM/zMvlh/m8LNiovW8u/hRfntuPpWyzTlKr/BlJWX9jAVzRsDdIx63Nn0s5ffNrXkx1s0Ol3DKKLLMQ5pTCZW+S5c5wLXLhCDe/wCA/Zzo+4aiUk1D2iP8SmjmIsygcaH8ALWaMeIHqBLLROkNqigMwNe65VmFo37DvS4wf4TGy8acrsnVPqdRKwNPCCafCpS7fNUyLU1H3zDfh5VOeliRgLkAY6Kap+H4z35PcvPKSr5qrIwW0TupSN0T5wMZ/7R2sFRfNaZ82kJAJZuU1U5UmtMPx3s0HCk2Pk12Koe8rOCM5+/zBbZEj44XreeY9oJg=
+    - GH_REF=github.com/kubernetes/ingress-nginx
+    - secure: LIS2XpZufWTcJ53jiRsSZy2Gi1EUJ1XmLg7z3f2ZHeMnyG2Jhk3GW4vod1FNru+PY4PWgddLdCdIl+jqOYXndFlbdAWF3/Oy5fEkYLXdYV7tdlHcPWDkqNFrfiyZ4guChN+b2Nk6FqU7o5fsZAIR7VAbgqNRF5XMo9Mhn/vhDCQRcnbXy7uq7JTrYUkqDbQoyYvT6b480GCY5gags1zp/xZfPDNZEe936o8i5IPTyiykRyNOXN/AH6kd3pR5e1xYgcvJ9KpSVPghcwFE7kJ4fOVMRhRG5ML+IyML+xD0jX43EMNoqRKZ/HS42kIMCInFbJEcxVde7DPNBZ7Y3GAqh7HO6qrE70Dn3ha6DID6zCoH2ArW39BxG4zempjn2VxYoMRGREyZszWQb++dwGoHmo5FHt6zvIrYBG0dA0H8ja9VkZkjFwtYTGHU1ooPzUfJK4O4VBayV8LqZibyZQR+GrmyQc0aagUY7J/fe4A2PJyI4DbkeZ7GX1ELj0ciDz4urQSzUc8l/T3aU3X+FuJItjgYtMLPmqcjA5uifDCtutE8Z9L2gSpanqUdvLSOozuxPho/KNl+2YlF7fXqPW3LnRf5mHD+NbOff306pvKlHJOb2Vmth+HBQ1XDzt/Cy5+sfwS3E0Vmh6UTq/NtkUXxwH10BDMF7FMVlQ4zdHQvyZ0=
+    - secure: rKDoy9IYYYy0fYBs4+9mwuBVq/TcxfFwMfE0ywYWhUUdgzrUYSJAwpoe/96EQ4YmESUefwC2nDNq4G3XzJKYOWf83PaIveb9Z//zmMrCQXjDuDBDLpwV3sXSh7evXiVDohJz4ogBCeMRUCMKYsyKBM9yWfa/iu+yI92dbphpK9peOKW6yBc0uspJlln4swN3GS2WT9LVuPY2Azv9U2UqrXufOPDKG/qEb/Vrn4yZ2lR/50r2k45e9nSvDoByvr10V8ubM5Zc0iP0vBuAUVRdByv6N53Q4gaBGapY6SxhIjIPC/h0rNnuT9EXp7MWaPT5FmBxLt9wnyleT9QhZJnFyaBYqFgcz/DKifYQkryY4M5dLMo/Rt3yATyAy8Y0df1TOoV2dKdqwOOwQ8bXB1wDfyrGxmQj9HY4Ffnphx3wPE1a+Sjuh+S5Epm7XJbPx5pZJqNO2hd4sTbk0Xp3gpPbihny2r/jtNwHl0wpFCfOM68RNrsVRlIwG3UhzbZvblbQ/M/mmWCdgzINjt07I2SGCJxfKG0e98Q49SKUoDoOgQTTRDqTC9IgOEDxyfAkT0Vr6BtlP88Nsgnf6kmboyigBrRAiaDQGTxn3SP6LnQI3CeopaRDYvFZe/rTwPXE9XlKoTn9FTWnAqF3MuWaLslDcDKYEh7OaYJjF01piu6g4Nc=
+    - secure: qCCk7HIEnOph2q8mQ55MKS2MM0RSpCbwDZx7csF6NHRr5khVRyhg2r8jN0iUW+peoAChRYV91YOnl5v8K49O38IEQpzgADixiLu4VPFcYddwKrtTJF+AGvFGzBKtqDksRuUTqfJ+PdxGnO9iNkS0MFzF1ImSQGp1QfkegC8wSrZF8svAedjNOC9XV+FX0tTyj14eTSy3KUYafIyuhjG+nSjhlQxAI1Tq4EClcTZOzAIYNhkeZ4Gcu1nHPQMTQT5AQgRAhG8i7rNKfghqX8OccKNWUhvFB3eOFFf4dlb02IA2L/b8Fl4NnZpyAWcwF+CBZrzQoFARBE1xIvGfaNa9i6noyrpJ/g+0g7EyKgTsixaQInBmZ7ECVpQkSO+/3leWfwssZs7H4cqy2HeXH6dkE+JUeI0WDjYV7YwdVNoFm8wXszDu+MCQTGXJ4moO4F/jMvY4w+tNo8ISJiNZ/+uQaIlPaijCdwu9FPvAY59lJXORGVHd1Fq2pKkGkNjQVHtu9BH7ufO1fX5a6FtYbclMwm7w9BE5jnJNoP+y8Yq0bVwbGONSUFTyMWCbSCYDsyUPzmaZLkFpZPbnJua5y9c1x0/OYijNizBW0UVQDZauortsTPzwYlZ1J7TywVtpUEoI8CGuUb2QEWh+O/IwrogtiKvFtPrrYakIwV/lr7mO294=
+    - secure: ZZlcwdr4X2ZeIuA4f5wiT04qNCpSiNQb9d3dITG7MdtxIpiC1mi9rUFAkMDDlNjKumHO82O/a/X4RYKjXny7eixeHl5lgQ++IV9APwvWfsCiREFhiQFspfL+j0d9sZ5I4pfyPC671984We1T4G+ltuMcN3nQdPm3mP4xPT3h0IBQ9iAHonKck0TdLieNZ47vPPB8C8oxbx5NpdW8aSfQJGo3bFGiXNxWWFZ4P7BsMBDrBZaXuh0rAml/0nCJBGohgSqC8h/UObBOHeehEWnF1zzfQPRezHwVkUaMf2+xQtLGhB5rPjFhBKX0C/JZeqDgHEQ0auC2bLbfG5QCYQauy7jCq5kc6XPT7xFxCUd/sS7Wu2gg6KcgFeTE+Rnn4KWFZx2jMP2EPQYP2+LrM/VbfY1HW4QkpIkPVSFBatciuePUnIkEX6+jVM+GEZOhOOEqZ89zwjsGpa2GkFAJrwX/dphXXtn6oS20mLbu1kqocWTbGUJl/fYztTxCdOt/NoH/hiQMxy+TOGFF3Dx85MJiMUOlgk/NbPqUwBn5RbuD71L69vFZZLpU09V4PuablWW8ACQxgp8BMeqLhaLRn/I3r0ntRc8AdQ1xubPlrVWO9DDbhGfj44YPNoLUAC/7QHkRyCbP98Yv2FTXrJFcx9isA2viFx2UxzTsvXcAKHbCSAw=
+
 jobs:
   include:
-  - if: commit_message =~ /^Triggered by upstream build/
-    script:
-    - export MULTI_ARCH_IMG=${REGISTRY}/nginx-fips-${ARCH}
-    - export TAG=nginx-v0.27.1
-    - export PROJECT_DIR=${PWD}
-    - cd ${PWD}/images/nginx/
-    - make container 
-    - cd ${PROJECT_DIR}
-    - export BASEIMAGE=${REGISTRY}/nginx-fips:${TAG}
-    - export TAG=v0.27.1
-    - make test
-    - make build && make build-plugin
-    - make container
-    deploy:
-      on:
-        branch: 0.27.1-travis-test
-      provider: script
-      script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        && make push
+    - stage: Publish docs
+      if: type = api AND branch = master AND repo = kubernetes/ingress-nginx AND env(COMPONENT) = "docs"
+      script:
+        - .travis/publish-docs.sh
