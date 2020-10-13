@@ -59,7 +59,4 @@ release: push
 	echo "done"
 
 fips-test:
-	export BASEIMAGE=${REGISTRY}/nginx-fips:${TAG}
-	eval docker run -e OPENSSL_FIPS=1 ${BASEIMAGE} openssl md5 /dev/null || true
-	echo "status $?"
-	[ $? -eq 0 ] && echo "fips test failed"; exit 1 || echo "fips test secceful"
+	./fips-test.sh
