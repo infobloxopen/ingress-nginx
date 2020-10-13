@@ -8,5 +8,5 @@ then
     echo "fips test failed"
     exit 1
 else
-	echo "fips test pass"
+	echo "fips test passed"
 fi
