@@ -41,7 +41,5 @@ script:
   - make build && make build-plugin
   - make container    
 deploy:
-  on:
-    branch: 0.27.1-test-travis
   provider: script
   script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin && make push
