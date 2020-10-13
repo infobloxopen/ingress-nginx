@@ -30,7 +30,7 @@ function cleanup {
 }
 trap cleanup EXIT
 
-E2E_IMAGE=quay.io/kubernetes-ingress-controller/e2e:v01142020-3f0df1c35
+E2E_IMAGE=docker.io/infoblox/nginx-fips:e2e-v10082020-1cb0afb61
 
 DOCKER_OPTS=${DOCKER_OPTS:-}
 
