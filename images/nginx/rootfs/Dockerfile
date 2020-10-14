@@ -37,7 +37,8 @@ RUN touch /etc/ld.so.conf.d/local_libs.conf \
   && echo "/usr/local/lib/mimalloc-1.6" >> /etc/ld.so.conf.d/local_libs.conf \
   && ldconfig -v
 
-RUN yum -y update \
+RUN yum -y install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+  && yum -y update \
   && yum -y upgrade \
   && yum -y install \
     bash \
@@ -50,13 +51,15 @@ RUN yum -y update \
     lmdb \
     libxml2 \
     libyaml \
-    dumb-init \
     nano \
     tzdata \
     shadow-utils \
     openssl \
+    wget \
   && yum clean all \
   && rm -rf /var/cache/yum \
+  && wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64 \
+  && chmod +x /usr/bin/dumb-init \
   && ln -s /usr/local/nginx/sbin/nginx /sbin/nginx \
   && groupadd -rg 101 www-data \
   && adduser -u 101 -M -d /usr/local/nginx \

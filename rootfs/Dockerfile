@@ -25,11 +25,9 @@ WORKDIR  /etc/nginx
 
 RUN yum -y update \
   && yum -y upgrade \
-  && yum -y install diffutils wget\ 
+  && yum -y install diffutils \
   && yum clean all \
-  && rm -rf /var/cache/yum \
-  && wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64 \
-  && chmod +x /usr/bin/dumb-init
+  && rm -rf /var/cache/yum
 
 COPY --chown=www-data:www-data . /
 

@@ -57,3 +57,6 @@ endif
 
 release: push
 	echo "done"
+
+fips-test:
+	./fips-test.sh
