@@ -13,28 +13,35 @@
 # limitations under the License.
 
 
-FROM alpine:3.11 as builder
+FROM amazonlinux:2 as builder
 
 COPY . /
 
-RUN apk add -U bash \
-  && /build.sh
+RUN /build.sh
 
 # Use a multi-stage build
-FROM alpine:3.11
+FROM amazonlinux:2
 
-ENV PATH=$PATH:/usr/local/luajit/bin:/usr/local/nginx/sbin:/usr/local/nginx/bin
+ENV PATH=$PATH:/usr/local/luajit/bin:/usr/local/nginx/sbin:/usr/local/nginx/bin:/usr/local/lib:/lib64:/lib
 
 ENV LUA_PATH="/usr/local/share/luajit-2.1.0-beta3/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/lib/lua/?.lua;;"
 ENV LUA_CPATH="/usr/local/lib/lua/?/?.so;/usr/local/lib/lua/?.so;;"
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /opt /opt
 COPY --from=builder /etc/nginx /etc/nginx
+RUN touch /etc/ld.so.conf.d/local_libs.conf \
+  && echo "/usr/local/lib" >> /etc/ld.so.conf.d/local_libs.conf \
+  && echo "/usr/local/lib/lua" >> /etc/ld.so.conf.d/local_libs.conf \
+  && echo "/usr/local/lib/mimalloc-1.6" >> /etc/ld.so.conf.d/local_libs.conf \
+  && ldconfig -v
 
-RUN apk add -U --no-cache \
+RUN yum -y install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+  && yum -y update \
+  && yum -y upgrade \
+  && yum -y install \
     bash \
-    openssl \
     pcre \
     zlib \
     geoip \
@@ -43,16 +50,20 @@ RUN apk add -U --no-cache \
     yajl \
     lmdb \
     libxml2 \
-    libmaxminddb \
-    yaml-cpp \
-    dumb-init \
+    libyaml \
     nano \
     tzdata \
+    shadow-utils \
+    openssl \
+    wget \
+  && yum clean all \
+  && rm -rf /var/cache/yum \
+  && wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64 \
+  && chmod +x /usr/bin/dumb-init \
   && ln -s /usr/local/nginx/sbin/nginx /sbin/nginx \
-  && ln -s /usr/local/lib/mimalloc-1.2/libmimalloc.so /usr/local/lib/libmimalloc.so \
-  && addgroup -Sg 101 www-data \
-  && adduser -S -D -H -u 101 -h /usr/local/nginx \
-    -s /sbin/nologin -G www-data -g www-data www-data \
+  && groupadd -rg 101 www-data \
+  && adduser -u 101 -M -d /usr/local/nginx \
+     -s /sbin/nologin -G www-data -g www-data www-data \
   && bash -eu -c ' \
   writeDirs=( \
     /var/log/nginx \

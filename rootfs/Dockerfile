@@ -23,9 +23,11 @@ LABEL org.opencontainers.image.version='VERSION'
 
 WORKDIR  /etc/nginx
 
-RUN apk add -U --no-cache \
-  diffutils \
-  libcap
+RUN yum -y update \
+  && yum -y upgrade \
+  && yum -y install diffutils \
+  && yum clean all \
+  && rm -rf /var/cache/yum
 
 COPY --chown=www-data:www-data . /
 
@@ -45,9 +47,8 @@ RUN bash -xeu -c ' \
   done'
 
 RUN  setcap    cap_net_bind_service=+ep /nginx-ingress-controller \
-  && setcap -v cap_net_bind_service=+ep /nginx-ingress-controller
-
-RUN  setcap    cap_net_bind_service=+ep /usr/local/nginx/sbin/nginx \
+  && setcap -v cap_net_bind_service=+ep /nginx-ingress-controller \
+  && setcap    cap_net_bind_service=+ep /usr/local/nginx/sbin/nginx \
   && setcap -v cap_net_bind_service=+ep /usr/local/nginx/sbin/nginx
 
 USER www-data

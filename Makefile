@@ -54,14 +54,14 @@ GIT_COMMIT ?= git-$(shell git rev-parse --short HEAD)
 
 PKG = k8s.io/ingress-nginx
 
-ALL_ARCH = amd64 arm arm64
+ALL_ARCH ?= amd64 arm arm64
 
 BUSTED_ARGS =-v --pattern=_test
 
 ARCH ?= $(shell go env GOARCH)
 
 REGISTRY ?= quay.io/kubernetes-ingress-controller
-MULTI_ARCH_IMAGE = $(REGISTRY)/nginx-ingress-controller-${ARCH}
+MULTI_ARCH_IMAGE ?= $(REGISTRY)/nginx-ingress-controller-${ARCH}
 
 GOHOSTOS ?= $(shell go env GOHOSTOS)
 GOARCH = ${ARCH}
@@ -78,7 +78,7 @@ endif
 GO111MODULE=off
 
 # Set default base image dynamically for each arch
-BASEIMAGE?=quay.io/kubernetes-ingress-controller/nginx-$(ARCH):26f574dc279aa853736d7f7249965e90e47171d6
+BASEIMAGE ?= quay.io/kubernetes-ingress-controller/nginx-$(ARCH):26f574dc279aa853736d7f7249965e90e47171d6
 
 TEMP_DIR := $(shell mktemp -d)
 DOCKERFILE := $(TEMP_DIR)/rootfs/Dockerfile

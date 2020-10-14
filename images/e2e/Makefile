@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TAG ?=v$(shell date +%m%d%Y)-$(shell git rev-parse --short HEAD)
-REGISTRY ?= quay.io/kubernetes-ingress-controller
+TAG ?=e2e-v$(shell date +%m%d%Y)-$(shell git rev-parse --short HEAD)
+REGISTRY ?= infoblox
 
-IMAGE = $(REGISTRY)/e2e
+IMAGE = $(REGISTRY)/nginx-fips
 
 all: docker-build docker-push
 
 docker-build:
 	docker build \
 		--pull \
-		--load \
 		--build-arg K8S_RELEASE=v1.15.7 \
 		--build-arg ETCD_VERSION=v3.3.18 \
 		--build-arg GOLANG_VERSION=1.13.5 \
@@ -33,5 +32,5 @@ docker-build:
 
 docker-push:
 	docker push $(IMAGE):$(TAG)
-	docker tag $(IMAGE):$(TAG) $(IMAGE):latest
-	docker push $(IMAGE):latest
+	docker tag $(IMAGE):$(TAG) $(IMAGE):e2e-latest
+	docker push $(IMAGE):e2e-latest
