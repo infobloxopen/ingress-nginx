@@ -2,28 +2,28 @@ sudo: required
 dist: focal
 
 before_install:
-- curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-- sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu
-  $(lsb_release -cs) stable"
-- sudo apt-get update
-- sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
-- docker pull amazonlinux:2
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu
+    $(lsb_release -cs) stable"
+  - sudo apt-get update
+  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+  - docker pull amazonlinux:2
 
 services:
-- docker
+  - docker
 
 language: go
 go:
-- 1.13.x
+  - 1.13.x
 
 env:
   global:
-  - REGISTRY=infoblox
-  - IMGNAME=nginx-fips
-  - PLATFORMS=amd64
-  - ARCH=amd64
-  - MULTI_ARCH_IMAGE=${REGISTRY}/nginx-fips
-  - DOCKER_CLI_EXPERIMENTAL=enabled
+    - REGISTRY=infoblox
+    - IMGNAME=nginx-fips
+    - PLATFORMS=amd64
+    - ARCH=amd64
+    - MULTI_ARCH_IMAGE=${REGISTRY}/nginx-fips
+    - DOCKER_CLI_EXPERIMENTAL=enabled
 
 script:
   - set -e
@@ -32,7 +32,14 @@ script:
   - export PROJECT_DIR=${PWD}
   - cd ${PWD}/images/nginx/
   - make container
-  - make fips-test 
+  - make fips-test
+  - |
+    if [ $TRAVIS_BRANCH == "nginx-0.27.1-fips" ] && [ $TRAVIS_PULL_REQUEST == "false" ]; then
+      export IMAGE=${REGISTRY}/${IMGNAME};
+      echo "pushing ${IMAGE}";
+      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin;
+      docker tag ${MULTI_ARCH_IMG}:${TAG} ${IMAGE}:${TAG} && docker push ${IMAGE}:${TAG};
+    fi
   - cd ${PROJECT_DIR}
   - export BASEIMAGE=${REGISTRY}/nginx-fips:${TAG}
   - export TAG=v0.27.1
@@ -42,8 +49,9 @@ script:
 
 deploy:
   provider: script
-  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  script:
+    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     && make push
   skip_cleanup: true
   on:
-    all_branches: true 
+    branch: nginx-0.27.1-fips
