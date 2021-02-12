@@ -1,4 +1,4 @@
-NGINX base image using [alpine](https://www.alpinelinux.org/)
+NGINX base image using [Amazon Linux2](https://hub.docker.com/_/amazonlinux)
 
 This custom image contains:
 
