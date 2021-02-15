@@ -44,7 +44,6 @@ pipeline {
         dir("$DIRECTORY/images/nginx") {
           sh "make container"
           sh "make fips-test"
-          sh "docker image list"
         }
       }
     }
@@ -63,7 +62,7 @@ pipeline {
     stage("Ingress Unit Tests") {
       steps {
         dir("$DIRECTORY") {
-          //sh "make test"
+          sh "make test"
         }
       }
     }
