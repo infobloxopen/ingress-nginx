@@ -27,12 +27,18 @@ pipeline {
   }
   stages {
     stage("Setup docker-ce") {
-        steps {
-          sh "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
-          sh 'sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"'
-          sh "sudo apt-get update"
-          sh 'sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce'
+      when {
+        expression {
+          DOCKER_VERSION = sh(returnStdout: true, script: "docker -v | awk -F\"[ ,]+\" '/version/ {print \$3}'").trim()
+          DOCKER_VERSION < '19.03.0'
         }
+      }
+      steps {
+        sh "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+        sh 'sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"'
+        sh "sudo apt-get update"
+        sh 'sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce'
+      }
     }
     stage("Setup") {
       steps {
