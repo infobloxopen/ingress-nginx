@@ -87,9 +87,11 @@ pipeline {
         anyOf { branch 'nginx-0.*-fips'; buildingTag() }
       }
       steps {
-        withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
-          dir("$DIRECTORY") {
-            sh "make push"
+        withEnv(["TAG=ingress-${env.TAG}"]) {
+          withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
+            dir("$DIRECTORY") {
+              sh "make push"
+            }
           }
         }
       }
