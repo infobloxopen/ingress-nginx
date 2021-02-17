@@ -21,8 +21,8 @@ set -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-export NGINX_VERSION=1.17.7
-export NDK_VERSION=0.3.1rc1
+export NGINX_VERSION=1.19.6
+export NDK_VERSION=0.3.1
 export SETMISC_VERSION=0.32
 export MORE_HEADERS_VERSION=0.33
 export NGINX_DIGEST_AUTH=cd8641886c873cf543255aeda20d23e4cd603d05
@@ -137,10 +137,10 @@ mkdir --verbose -p "$BUILD_PATH"
 cd "$BUILD_PATH"
 
 # download, verify and extract the source files
-get_src b62756842807e5693b794e5d0ae289bd8ae5b098e66538b2a91eb80f25c591ff \
+get_src b11195a02b1d3285ddf2987e02c6b6d28df41bb1b1dd25f33542848ef4fc33b5 \
         "https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz"
 
-get_src 49f50d4cd62b166bc1aaf712febec5e028d9f187cedbc27a610dfd01bdde2d36 \
+get_src 0e971105e210d272a497567fa2e2c256f4e39b845a5ba80d373e26ba1abfbd85 \
         "https://github.com/simpl/ngx_devel_kit/archive/v$NDK_VERSION.tar.gz"
 
 get_src f1ad2459c4ee6a61771aa84f77871f4bfe42943a4aa4c30c62ba3f981f52c201 \
