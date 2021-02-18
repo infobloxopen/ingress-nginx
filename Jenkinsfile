@@ -55,7 +55,7 @@ pipeline {
     }
     stage("Push NGINX Image") {
       when {
-        anyOf { branch 'nginx-0.27.1-fips'; buildingTag() }
+        anyOf { branch 'nginx-0.*-fips'; buildingTag() }
       }
       steps {
         withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
