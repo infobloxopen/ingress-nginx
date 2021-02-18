@@ -55,7 +55,7 @@ pipeline {
     }
     stage("Push NGINX Image") {
       when {
-        anyOf { branch 'nginx-0.*-fips'; buildingTag() }
+        anyOf { branch 'nginx-fips'; buildingTag() }
       }
       steps {
         withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
@@ -84,7 +84,7 @@ pipeline {
     }
     stage("Push Ingress Image") {
       when {
-        anyOf { branch 'nginx-0.*-fips'; buildingTag() }
+        anyOf { branch 'nginx-fips'; buildingTag() }
       }
       steps {
         withEnv(["TAG=ingress-${env.TAG}"]) {
