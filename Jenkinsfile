@@ -12,9 +12,10 @@ pipeline {
   }
   environment {
     DIRECTORY = "src/github.com/infobloxopen/ingress-nginx"
+    NGINX_VERSION = "v1.19.6"
     GIT_VERSION = sh(script: "cd ${DIRECTORY} && git describe --always --long --tags",
                        returnStdout: true).trim()
-    TAG = "${env.GIT_VERSION}-j${env.BUILD_NUMBER}"
+    TAG = "${env.NGINX_VERSION}-${env.GIT_VERSION}-j${env.BUILD_NUMBER}"
     REGISTRY = 'infoblox'
     IMGNAME = 'nginx-fips'
     PLATFORMS = 'amd64'
@@ -74,7 +75,7 @@ pipeline {
     }
     stage("Build Ingress Image") {
       steps {
-        withEnv(["TAG=ingress-${env.TAG}"]) {
+        withEnv(["TAG=${env.TAG}-ingress"]) {
           dir("$DIRECTORY") {
             sh "make build && make build-plugin"
             sh "make container"
@@ -87,7 +88,7 @@ pipeline {
         anyOf { branch 'nginx-fips'; buildingTag() }
       }
       steps {
-        withEnv(["TAG=ingress-${env.TAG}"]) {
+        withEnv(["TAG=${env.TAG}-ingress"]) {
           withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
             dir("$DIRECTORY") {
               sh "make push"
