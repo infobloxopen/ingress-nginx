@@ -28,6 +28,7 @@ SHELL=/bin/bash -o pipefail -o errexit
 
 # Use the 0.0 tag for testing, it shouldn't clobber any release builds
 TAG ?= $(shell cat TAG)
+IMAGE_NAME ?= nginx-fips
 
 # e2e settings
 # Allow limiting the scope of the e2e tests. By default run everything
@@ -68,12 +69,12 @@ image: clean-image ## Build image for a particular arch.
 		--build-arg TARGETARCH="$(ARCH)" \
 		--build-arg COMMIT_SHA="$(COMMIT_SHA)" \
 		--build-arg BUILD_ID="$(BUILD_ID)" \
-		-t $(REGISTRY)/controller:$(TAG) rootfs
+		-t $(REGISTRY)/$(IMAGE_NAME):$(TAG) rootfs
 
 .PHONY: clean-image
 clean-image: ## Removes local image
-	echo "removing old image $(REGISTRY)/controller:$(TAG)"
-	@docker rmi -f $(REGISTRY)/controller:$(TAG) || true
+	echo "removing old image $(REGISTRY)/$(IMAGE_NAME):$(TAG)"
+	@docker rmi -f $(REGISTRY)/$(IMAGE_NAME):$(TAG) || true
 
 .PHONY: build
 build:  ## Build ingress controller, debug tool and pre-stop hook.
@@ -220,4 +221,4 @@ release: ensure-buildx clean
 		--build-arg VERSION="$(TAG)" \
 		--build-arg COMMIT_SHA="$(COMMIT_SHA)" \
 		--build-arg BUILD_ID="$(BUILD_ID)" \
-		-t $(REGISTRY)/controller:$(TAG) rootfs
+		-t $(REGISTRY)/$(IMAGE_NAME):$(TAG) rootfs

@@ -56,7 +56,7 @@ export LUA_RESTY_MEMCACHED_VERSION=0.15
 export LUA_RESTY_REDIS_VERSION=0.29
 export LUA_RESTY_IPMATCHER_VERSION=1a0a1c58fd085b15eedee58de8b5f45c27aff7bc
 export LUA_RESTY_GLOBAL_THROTTLE_VERSION=0.2.0
-
+export LIBMAXMINDDB_VERSION=1.5.0
 export BUILD_PATH=/tmp/build
 
 ARCH=$(uname -m)
@@ -74,45 +74,54 @@ get_src()
   tar xzf "$f"
   rm -rf "$f"
 }
+# add epel repo
+yum -y install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum -y update
+yum -y upgrade
 
 # install required packages to build
-apk add \
-  bash \
+yum -y install \
   gcc \
+  gcc-c++ \
   clang \
-  libc-dev \
+  glibc \
+  glibc-devel \
   make \
   automake \
-  openssl-dev \
-  pcre-dev \
-  zlib-dev \
-  linux-headers \
-  libxslt-dev \
-  gd-dev \
-  geoip-dev \
-  perl-dev \
-  libedit-dev \
+  pcre-devel \
+  zlib-devel \
+  kernel-headers \
+  libxslt-devel \
+  gd-devel \
+  perl-devel \
+  libedit-devel \
   mercurial \
-  alpine-sdk \
   findutils \
   curl ca-certificates \
   patch \
-  libaio-dev \
-  openssl \
-  cmake \
+  libaio-devel \
   util-linux \
-  lmdb-tools \
+  geoip \
+  geoip-devel \
   wget \
-  curl-dev \
-  libprotobuf \
-  git g++ pkgconf flex bison doxygen yajl-dev lmdb-dev libtool autoconf libxml2 libxml2-dev \
+  protobuf \
+  git pkgconfig flex bison doxygen yajl-devel libtool autoconf libxml2 libxml2-devel \
   python3 \
-  libmaxminddb-dev \
   bc \
   unzip \
   dos2unix \
-  yaml-cpp \
-  coreutils
+  coreutils \
+  perl \
+  gzip \
+  openssl \
+  openssl-devel \
+  libcurl-devel \
+  libyaml \
+  libyaml-devel \
+  cmake3 \
+  lmdb \
+  lmdb-libs \
+  lmdb-devel
 
 mkdir -p /etc/nginx
 
@@ -222,6 +231,9 @@ get_src d0eacda122ab36585936256cb222ea9147bc5ad1fc3f24fd3748475653dd27ad \
 get_src 0fb790e394510e73fdba1492e576aaec0b8ee9ef08e3e821ce253a07719cf7ea \
         "https://github.com/ElvinEfendi/lua-resty-global-throttle/archive/v$LUA_RESTY_GLOBAL_THROTTLE_VERSION.tar.gz"
 
+get_src 7c56e791ff2a655215e7ed3864b1ffdd7d34a38835779efed56a42f056bd58aa \
+        "https://github.com/maxmind/libmaxminddb/releases/download/$LIBMAXMINDDB_VERSION/libmaxminddb-$LIBMAXMINDDB_VERSION.tar.gz"
+
 # improve compilation times
 CORES=$(($(grep -c ^processor /proc/cpuinfo) - 1))
 
@@ -252,7 +264,7 @@ cd "$BUILD_PATH/opentracing-cpp-$OPENTRACING_CPP_VERSION"
 mkdir .build
 cd .build
 
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_TESTING=OFF \
       -DWITH_BOOST_STATIC=ON \
       -DBUILD_SHARED_LIBS=OFF \
@@ -279,7 +291,7 @@ EOF
 mkdir .build
 cd .build
 
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_TESTING=OFF \
       -DJAEGERTRACING_BUILD_EXAMPLES=OFF \
       -DJAEGERTRACING_BUILD_CROSSDOCK=OFF \
@@ -298,6 +310,12 @@ export HUNTER_INSTALL_DIR=$(cat _3rdParty/Hunter/install-root-dir) \
 
 mv libjaegertracing_plugin.so /usr/local/lib/libjaegertracing_plugin.so
 
+# build maxminddb
+cd "$BUILD_PATH/libmaxminddb-$LIBMAXMINDDB_VERSION"
+./configure --libdir=/lib64
+make
+make install
+ldconfig
 
 # build zipkin lib
 cd "$BUILD_PATH/zipkin-cpp-opentracing-$ZIPKIN_CPP_VERSION"
@@ -313,7 +331,7 @@ EOF
 mkdir .build
 cd .build
 
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=OFF \
       -DWITH_BOOST_STATIC=ON \
       -DBUILD_PLUGIN=ON \
@@ -329,7 +347,7 @@ cd "$BUILD_PATH/msgpack-c-cpp-$MSGPACK_VERSION"
 
 mkdir .build
 cd .build
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=OFF \
       -DMSGPACK_BUILD_EXAMPLES=OFF \
       -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
@@ -344,7 +362,7 @@ cd "$BUILD_PATH/dd-opentracing-cpp-$DATADOG_CPP_VERSION"
 mkdir .build
 cd .build
 
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_TESTING=OFF \
       -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
       ..
@@ -601,7 +619,7 @@ cd mimalloc
 mkdir -p out/release
 cd out/release
 
-cmake ../..
+cmake3 ../..
 
 make
 make install
@@ -617,8 +635,12 @@ writeDirs=( \
   /var/log/nginx \
 );
 
-addgroup -Sg 101 www-data
-adduser -S -D -H -u 101 -h /usr/local/nginx -s /sbin/nologin -G www-data -g www-data www-data
+#addgroup -Sg 101 www-data
+#adduser -S -D -H -u 101 -h /usr/local/nginx -s /sbin/nologin -G www-data -g www-data www-data
+# Amazon Linux 2 does not have addgroup command, adduser uses different flag than alpine linux
+groupadd -rg 101 www-data
+adduser -u 101 -M -d /usr/local/nginx \
+     -s /sbin/nologin -G www-data -g www-data www-data
 
 for dir in "${writeDirs[@]}"; do
   mkdir -p ${dir};
