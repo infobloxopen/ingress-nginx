@@ -28,5 +28,5 @@ if [ -z "${PKG}" ]; then
   exit 1
 fi
 
-go test -v \
+go test -v -p 1 \
   $(go list "${PKG}/..." | grep -v vendor | grep -v '/test/e2e' | grep -v images | grep -v "docs/examples")
