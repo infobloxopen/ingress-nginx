@@ -31,6 +31,7 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /opt /opt
 COPY --from=builder /etc/nginx /etc/nginx
+COPY --from=builder /lib64 /lib64
 RUN touch /etc/ld.so.conf.d/local_libs.conf \
   && echo "/usr/local/lib" >> /etc/ld.so.conf.d/local_libs.conf \
   && echo "/usr/local/lib/lua" >> /etc/ld.so.conf.d/local_libs.conf \
