@@ -23,16 +23,17 @@ INIT_BUILDX=$(DIR)/../../hack/init-buildx.sh
 # 0.0.0 shouldn't clobber any released builds
 TAG ?= 0.0
 REGISTRY ?= gcr.io/k8s-staging-ingress-nginx
-
-IMAGE = $(REGISTRY)/nginx
+IMAGE_NAME ?= nginx-fips
+IMAGE = $(REGISTRY)/$(IMAGE_NAME)
 
 # required to enable buildx
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # build with buildx
 PLATFORMS?=linux/amd64,linux/arm,linux/arm64,linux/s390x
-OUTPUT=
+OUTPUT=--load
 PROGRESS=plain
+
 build: ensure-buildx
 	docker buildx build \
 		--platform=${PLATFORMS} $(OUTPUT) \
