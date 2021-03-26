@@ -40,6 +40,7 @@ pipeline {
     }
     stage("Setup") {
       steps {
+        sh "rm -f $DIRECTORY/images.list"
         prepareBuild()
       }
     }
