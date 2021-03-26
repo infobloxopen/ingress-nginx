@@ -40,6 +40,7 @@ pipeline {
     }
     stage("Setup") {
       steps {
+        sh "rm -f $DIRECTORY/images.list"
         prepareBuild()
       }
     }
@@ -60,6 +61,9 @@ pipeline {
           dir("$DIRECTORY/images/nginx") {
             sh "make push"
           }
+        }
+        dir("$DIRECTORY") {
+          sh 'echo ${REGISTRY}/${IMAGE_NAME}:${TAG} >> images.list'
         }
       }
     }
@@ -89,6 +93,7 @@ pipeline {
           withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
             dir("$DIRECTORY") {
               sh "make release"
+              sh 'echo ${REGISTRY}/${IMAGE_NAME}:${TAG} >> images.list'
             }
           }
         }
@@ -99,12 +104,14 @@ pipeline {
     success {
       // finalizeBuild is one of the Secure CICD helper methods
       dir("$DIRECTORY") {
-          finalizeBuild()
+        sh "touch images.list"
+        finalizeBuild(readFile(file: 'images.list'))
       }
     }
     cleanup {
       dir("$DIRECTORY") {
         sh "make clean || true"
+        sh "rm -f images.list"
       }
       cleanWs()
     }
