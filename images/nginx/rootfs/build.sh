@@ -285,7 +285,7 @@ cd "$BUILD_PATH/yaml-cpp-$YAML_CPP_VERSION"
 mkdir .build
 cd .build
 
-cmake -DCMAKE_BUILD_TYPE=Release \
+cmake3 -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true \
       -DYAML_BUILD_SHARED_LIBS=ON \
       -DYAML_CPP_BUILD_TESTS=OFF \
