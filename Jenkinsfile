@@ -47,8 +47,7 @@ pipeline {
     stage("Build NGINX Image") {
       steps {
         dir("$DIRECTORY/images/nginx") {
-          sh "make build"
-          sh "make fips-test"
+          sh 'make -j$(nproc) build fips-test'
         }
       }
     }
@@ -78,8 +77,7 @@ pipeline {
       steps {
         withEnv(["TAG=${env.GIT_VERSION}-j${env.BUILD_NUMBER}-ingress", "PLATFORMS=amd64"]) {
           dir("$DIRECTORY") {
-            sh "make build"
-            sh "make image"
+            sh 'make -j$(nproc) build image'
           }
         }
       }
