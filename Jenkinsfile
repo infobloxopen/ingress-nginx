@@ -12,7 +12,7 @@ pipeline {
   }
   environment {
     DIRECTORY = "src/github.com/infobloxopen/ingress-nginx"
-    GIT_VERSION = sh(script: "cd ${DIRECTORY} && git describe --always --long --tags",
+    GIT_VERSION = sh(script: "cd ${DIRECTORY} && git describe --always --long --tags --match 'controller-*' | sed s/controller-//",
                        returnStdout: true).trim()
     TAG = "${env.GIT_VERSION}-j${env.BUILD_NUMBER}-nginx"
     REGISTRY = 'infoblox'
