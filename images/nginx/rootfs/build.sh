@@ -96,7 +96,6 @@ yum -y install \
   gd-devel \
   perl-devel \
   libedit-devel \
-  mercurial \
   findutils \
   curl ca-certificates \
   patch \
