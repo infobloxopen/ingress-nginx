@@ -236,7 +236,7 @@ get_src cbe625cba85291712253db5bc3870d60c709acfad9a8af5a302673d3d201e3ea \
 get_src 71de3d0658935db7ccea20e006b35e58ddc7e4c18878b9523f2addc2371e9270 \
         "https://github.com/rnburn/zipkin-cpp-opentracing/archive/$ZIPKIN_CPP_VERSION.tar.gz"
 
-get_src f8d3ff15520df736c5e20e91d5852ec27e0874566c2afce7dcb979e2298d6980 \
+get_src ae811c7208ac029cb7a99d6f63e03d3971797607517187f47620df39c1f78add \
         "https://github.com/SpiderLabs/ModSecurity-nginx/archive/v$MODSECURITY_VERSION.tar.gz"
 
 get_src 43e6a9fcb146ad871515f0d0873947e5d497a1c9c60c58cb102a97b47208b7c3 \
