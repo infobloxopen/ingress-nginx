@@ -57,13 +57,13 @@ export MSGPACK_VERSION=3.3.0
 export DATADOG_CPP_VERSION=af53c523787cca108ae9f458ea5c962e48187a36
 
 # Check for recent changes: https://github.com/SpiderLabs/ModSecurity-nginx/compare/v1.0.2...master
-export MODSECURITY_VERSION=1.0.2
+export MODSECURITY_VERSION=1.0.3
 
-# Check for recent changes: https://github.com/SpiderLabs/ModSecurity/compare/v3.0.5...v3/master
-export MODSECURITY_LIB_VERSION=v3.0.5
+# Check for recent changes: https://github.com/SpiderLabs/ModSecurity/compare/v3.0.8...v3/master
+export MODSECURITY_LIB_VERSION=v3.0.8
 
 # Check for recent changes: https://github.com/coreruleset/coreruleset/compare/v3.3.2...v3.3/master
-export OWASP_MODSECURITY_CRS_VERSION=v3.3.2
+export OWASP_MODSECURITY_CRS_VERSION=v3.3.4
 
 # Check for recent changes: https://github.com/openresty/lua-nginx-module/compare/v0.10.20...master
 export LUA_NGX_VERSION=b721656a9127255003b696b42ccc871c7ec18d59
