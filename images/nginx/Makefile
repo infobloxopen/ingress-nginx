@@ -42,7 +42,7 @@ build: ensure-buildx
 		--tag $(IMAGE):$(TAG) rootfs
 
 # push the cross built image
-push: OUTPUT=--load
+push: OUTPUT=--push
 push: build
 
 # enable buildx
