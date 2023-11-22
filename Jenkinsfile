@@ -92,9 +92,6 @@ pipeline {
       }
     }
     stage("Push Ingress Image") {
-      when {
-        anyOf { branch 'controller-fips'; buildingTag() }
-      }
       steps {
         withEnv(["TAG=${env.GIT_VERSION}-j${env.BUILD_NUMBER}-ingress", "PLATFORMS=amd64"]) {
           withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
