@@ -249,7 +249,7 @@ release: ensure-buildx #clean
 		--build-arg BUILD_ID="$(BUILD_ID)" \
 		-t $(REGISTRY)/$(IMAGE_NAME):$(TAG) rootfs
 
-	@docker buildx build \
+#	@docker buildx build \
 		--no-cache \
 		$(MAC_DOCKER_FLAGS) \
 		--push \
