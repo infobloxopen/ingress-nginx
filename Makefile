@@ -231,7 +231,7 @@ PLATFORMS ?= amd64 arm arm64 s390x
 BUILDX_PLATFORMS ?= linux/amd64,linux/arm,linux/arm64,linux/s390x
 
 .PHONY: release # Build a multi-arch docker image
-release: ensure-buildx clean
+release: ensure-buildx #clean
 	echo "Building binaries..."
 	$(foreach PLATFORM,$(PLATFORMS), echo -n "$(PLATFORM)..."; ARCH=$(PLATFORM) make build;)
 
