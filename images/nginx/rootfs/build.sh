@@ -552,6 +552,29 @@ mv coreruleset owasp-modsecurity-crs
 cd owasp-modsecurity-crs
 
 mv crs-setup.conf.example crs-setup.conf
+
+# Override default permitted functions to allow for PUT and DELETE requests
+# See https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.3/dev/crs-setup.conf.example#L376-L388
+# Override default permitted content-types to allow for application/x-ndjson requests
+# See https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.3/dev/crs-setup.conf.example#L390-L401
+echo "
+SecAction \\
+ \"id:900200,\\
+  phase:1,\\
+  nolog,\\
+  pass,\\
+  t:none,\\
+  setvar:'tx.allowed_methods=GET HEAD POST OPTIONS PUT PATCH DELETE'\"
+
+SecAction \\
+ \"id:900220,\\
+  phase:1,\\
+  nolog,\\
+  pass,\\
+  t:none,\\
+  setvar:'tx.allowed_request_content_type=|application/x-www-form-urlencoded| |multipart/form-data| |multipart/related| |text/xml| |application/xml| |application/soap+xml| |application/x-amf| |application/json| |application/octet-stream| |application/csp-report| |application/xss-auditor-report| |text/plain| |application/x-ndjson|'\"
+" >> crs-setup.conf
+
 mv rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
 mv rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
 cd ..
