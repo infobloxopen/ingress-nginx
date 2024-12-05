@@ -26,14 +26,14 @@ TAG ?=$(shell cat TAG)
 
 REGISTRY ?= gcr.io/k8s-staging-ingress-nginx
 
-IMAGE = $(REGISTRY)/nginx
+IMAGE = $(REGISTRY)/nginx-fips
 
 # required to enable buildx
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # build with buildx
 PLATFORMS?=linux/amd64,linux/arm,linux/arm64
-OUTPUT=
+OUTPUT=--load
 PROGRESS=plain
 build: ensure-buildx
 	docker buildx build \

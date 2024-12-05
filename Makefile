@@ -78,7 +78,7 @@ image: clean-image ## Build image for a particular arch.
 		--build-arg TARGETARCH="$(ARCH)" \
 		--build-arg COMMIT_SHA="$(COMMIT_SHA)" \
 		--build-arg BUILD_ID="$(BUILD_ID)" \
-		-t $(REGISTRY)/controller:$(TAG) rootfs
+		-t $(REGISTRY)/nginx-fips:$(TAG) rootfs
 
 .PHONY: gosec
 gosec:
@@ -98,8 +98,8 @@ image-chroot: clean-chroot-image ## Build image for a particular arch.
 
 .PHONY: clean-image
 clean-image: ## Removes local image
-	echo "removing old image $(REGISTRY)/controller:$(TAG)"
-	@docker rmi -f $(REGISTRY)/controller:$(TAG) || true
+	echo "removing old image $(REGISTRY)/nginx-fips:$(TAG)"
+	@docker rmi -f $(REGISTRY)/nginx-fips:$(TAG) || true
 
 
 .PHONY: clean-chroot-image
@@ -244,7 +244,7 @@ PLATFORMS ?= amd64 arm arm64
 BUILDX_PLATFORMS ?= linux/amd64,linux/arm,linux/arm64
 
 .PHONY: release # Build a multi-arch docker image
-release: ensure-buildx clean
+release: ensure-buildx #clean
 	echo "Building binaries..."
 	$(foreach PLATFORM,$(PLATFORMS), echo -n "$(PLATFORM)..."; ARCH=$(PLATFORM) make build;)
 
@@ -261,9 +261,9 @@ release: ensure-buildx clean
 		--build-arg VERSION="$(TAG)" \
 		--build-arg COMMIT_SHA="$(COMMIT_SHA)" \
 		--build-arg BUILD_ID="$(BUILD_ID)" \
-		-t $(REGISTRY)/controller:$(TAG) rootfs
+		-t $(REGISTRY)/nginx-fips:$(TAG) rootfs
 
-	docker buildx build \
+#	docker buildx build \
 		--no-cache \
 		$(MAC_DOCKER_FLAGS) \
 		--push \
