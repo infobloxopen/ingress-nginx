@@ -56,13 +56,8 @@ export LUA_UPSTREAM_VERSION=542be0893543a4e42d89f6dd85372972f5ff2a36
 # Check for recent changes: https://github.com/openresty/lua-cjson/compare/2.1.0.13...openresty:master
 export LUA_CJSON_VERSION=2.1.0.13
 
-<<<<<<< HEAD
 # Check for recent changes: https://github.com/leev/ngx_http_geoip2_module/compare/a607a41a8115fecfc05b5c283c81532a3d605425...master
 export GEOIP2_VERSION=a607a41a8115fecfc05b5c283c81532a3d605425
-=======
-# Check for recent changes: https://github.com/leev/ngx_http_geoip2_module/compare/3.3...master
-export GEOIP2_VERSION=a26c6beed77e81553686852dceb6c7fdacc5970d
->>>>>>> 609d0aef5 (Merge pull request #120 from infobloxopen/rollback-geoip)
 
 # Check for recent changes: https://github.com/openresty/luajit2/compare/v2.1-20240314...v2.1-agentzh
 export LUAJIT_VERSION=v2.1-20240314
@@ -234,13 +229,8 @@ get_src a92c9ee6682567605ece55d4eed5d1d54446ba6fba748cff0a2482aea5713d5f \
 get_src 77bbcbb24c3c78f51560017288f3118d995fe71240aa379f5818ff6b166712ff \
         "https://github.com/openresty/luajit2/archive/$LUAJIT_VERSION.tar.gz" "luajit2"
 
-<<<<<<< HEAD
 get_src b6c9c09fd43eb34a71e706ad780b2ead26549a9a9f59280fe558f5b7b980b7c6 \
         "https://github.com/leev/ngx_http_geoip2_module/archive/$GEOIP2_VERSION.tar.gz" "ngx_http_geoip2_module"
-=======
-get_src 4c1933434572226942c65b2f2b26c8a536ab76aa771a3c7f6c2629faa764976b \
-        "https://github.com/leev/ngx_http_geoip2_module/archive/$GEOIP2_VERSION.tar.gz"
->>>>>>> 609d0aef5 (Merge pull request #120 from infobloxopen/rollback-geoip)
 
 get_src deb4ab1ffb9f3d962c4b4a2c4bdff692b86a209e3835ae71ebdf3b97189e40a9 \
         "https://github.com/openresty/lua-resty-upload/archive/$LUA_RESTY_UPLOAD_VERSION.tar.gz" "lua-resty-upload"
