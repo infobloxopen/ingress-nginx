@@ -77,6 +77,15 @@ RUN apk add --no-cache libcap \
   && apk del libcap \
   && ln -sf /usr/local/nginx/sbin/nginx /usr/bin/nginx
 
+RUN apk add --no-cache gcc openssl-dev libc-dev make \
+  && curl -L https://github.com/chainguard-dev/openssl-fips-test/archive/refs/heads/main.zip -o /tmp/main.zip \
+  && unzip /tmp/main.zip -d /tmp \
+  && cd /tmp/openssl-fips-test-main \
+  && make && make install \
+  && openssl-fips-test \
+  && apk del gcc openssl-dev libc-dev make \
+  && rm -rf /tmp/main.zip /tmp/openssl-fips-test-main
+
 USER www-data
 
 # Create symlinks to redirect nginx logs to stdout and stderr docker log collector
