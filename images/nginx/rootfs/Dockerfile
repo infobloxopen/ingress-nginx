@@ -46,6 +46,7 @@ RUN apk update \
   lmdb \
   libxml2 \
   libmaxminddb \
+  geoip \
   yaml-cpp \
   dumb-init \
   tzdata \
