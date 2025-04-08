@@ -11,7 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-FROM ghcr.io/nginxinc/alpine-fips:edge as builder
+FROM alpine:latest AS alpine-fips
+ARG OPENSSL_VERSION=3.0.9
+
+RUN apk add --no-cache --virtual .build-deps \
+    make gcc libgcc musl-dev linux-headers perl vim \
+    &&  wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz \
+    && tar -xf openssl-${OPENSSL_VERSION}.tar.gz\
+    && cd openssl-${OPENSSL_VERSION} \
+    && ./Configure enable-fips --libdir=lib --prefix=/usr \
+    && make \
+    && make install_fips \
+    && apk del .build-deps \
+    && cd .. && rm -rf openssl-${OPENSSL_VERSION}.tar.gz openssl-${OPENSSL_VERSION} \
+    && apk upgrade --no-cache -U
+
+COPY openssl.cnf /etc/ssl/openssl.cnf
+
+FROM alpine-fips AS builder
 
 COPY . /
 
@@ -21,7 +38,7 @@ RUN apk update \
   && /build.sh
 
 # Use a multi-stage build
-FROM ghcr.io/nginxinc/alpine-fips:edge
+FROM alpine-fips
 
 ENV PATH=$PATH:/usr/local/luajit/bin:/usr/local/nginx/sbin:/usr/local/nginx/bin
 
