@@ -47,8 +47,10 @@ pipeline {
     }
     stage("Build NGINX Image") {
       steps {
-        dir("$DIRECTORY/images/nginx") {
-          sh "make build"
+        withDockerRegistry([credentialsId: "${env.JENKINS_DOCKER_CRED_ID}", url: ""]) {
+          dir("$DIRECTORY/images/nginx") {
+            sh "make build"
+          }
         }
       }
     }
