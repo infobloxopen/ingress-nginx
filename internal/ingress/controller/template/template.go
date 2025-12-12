@@ -68,7 +68,7 @@ const (
 // Writer is the interface to render a template
 type Writer interface {
 	// Write renders the template.
-	// NOTE: Implementors must ensure that the content of the returned slice is not modified by the implementation
+	// NOTE: Implementers must ensure that the content of the returned slice is not modified by the implementation
 	// after the return of this function.
 	Write(conf *config.TemplateConfig) ([]byte, error)
 }
@@ -314,6 +314,7 @@ var funcMap = text_template.FuncMap{
 	},
 	"isValidByteSize":                    isValidByteSize,
 	"buildForwardedFor":                  buildForwardedFor,
+	"buildForwardedHost":                 buildForwardedHost,
 	"buildAuthSignURL":                   buildAuthSignURL,
 	"buildAuthSignURLLocation":           buildAuthSignURLLocation,
 	"buildOpentelemetry":                 buildOpentelemetry,
@@ -602,17 +603,12 @@ func buildAuthResponseHeaders(proxySetHeader string, headers []string, lua bool)
 	return res
 }
 
-func buildAuthUpstreamLuaHeaders(headers []string) []string {
-	res := []string{}
-
+func buildAuthUpstreamLuaHeaders(headers []string) string {
 	if len(headers) == 0 {
-		return res
+		return ""
 	}
 
-	for i, h := range headers {
-		res = append(res, fmt.Sprintf("ngx.var.authHeader%d = res.header['%s']", i, h))
-	}
-	return res
+	return strings.Join(headers, ",")
 }
 
 func buildAuthProxySetHeaders(headers map[string]string) []string {
@@ -623,8 +619,9 @@ func buildAuthProxySetHeaders(headers map[string]string) []string {
 	}
 
 	for name, value := range headers {
-		res = append(res, fmt.Sprintf("proxy_set_header '%v' '%v';", name, value))
+		res = append(res, fmt.Sprintf("proxy_set_header %q %q;", name, value))
 	}
+
 	sort.Strings(res)
 	return res
 }
@@ -852,7 +849,7 @@ func buildRateLimitZones(input interface{}) []string {
 		}
 	}
 
-	return zones.UnsortedList()
+	return sets.List(zones)
 }
 
 // buildRateLimit produces an array of limit_req to be used inside the Path of
@@ -997,7 +994,7 @@ func buildNextUpstream(i, r interface{}) string {
 	return strings.Join(nextUpstreamCodes, " ")
 }
 
-// refer to http://nginx.org/en/docs/syntax.html
+// refer to https://nginx.org/en/docs/syntax.html
 // Nginx differentiates between size and offset
 // offset directives support gigabytes in addition
 var (
@@ -1006,7 +1003,7 @@ var (
 )
 
 // isValidByteSize validates size units valid in nginx
-// http://nginx.org/en/docs/syntax.html
+// https://nginx.org/en/docs/syntax.html
 func isValidByteSize(input interface{}, isOffset bool) bool {
 	s, ok := input.(string)
 	if !ok {
@@ -1156,6 +1153,18 @@ func buildForwardedFor(input interface{}) string {
 	ffh := strings.ReplaceAll(s, "-", "_")
 	ffh = strings.ToLower(ffh)
 	return fmt.Sprintf("$http_%v", ffh)
+}
+
+func buildForwardedHost(input interface{}) string {
+	s, ok := input.(string)
+	if !ok {
+		klog.Errorf("expected a 'string' type but %T was returned", input)
+		return ""
+	}
+
+	fhh := strings.ReplaceAll(s, "-", "_")
+	fhh = strings.ToLower(fhh)
+	return fmt.Sprintf("$http_%v", fhh)
 }
 
 func buildAuthSignURL(authSignURL, authRedirectParam string) string {

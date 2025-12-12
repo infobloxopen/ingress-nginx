@@ -42,7 +42,7 @@ worker_cpu_affinity {{ $cfg.WorkerCPUAffinity }};
 
 worker_rlimit_nofile {{ $cfg.MaxWorkerOpenFiles }};
 
-{{/* http://nginx.org/en/docs/ngx_core_module.html#worker_shutdown_timeout */}}
+{{/* https://nginx.org/en/docs/ngx_core_module.html#worker_shutdown_timeout */}}
 {{/* avoid waiting too long during a reload */}}
 worker_shutdown_timeout {{ $cfg.WorkerShutdownTimeout }} ;
 
@@ -77,7 +77,9 @@ http {
     {{/* Enable the real_ip module only if we use either X-Forwarded headers or Proxy Protocol. */}}
     {{/* we use the value of the real IP for the geo_ip module */}}
     {{ if or (or $cfg.UseForwardedHeaders $cfg.UseProxyProtocol) $cfg.EnableRealIP }}
-    {{ if $cfg.UseProxyProtocol }}
+    {{ if and $cfg.UseForwardedHeaders $cfg.UseProxyProtocol }}
+    real_ip_header      {{ $cfg.ForwardedForProxyProtocolHeader }};
+    {{ else if $cfg.UseProxyProtocol }}
     real_ip_header      proxy_protocol;
     {{ else }}
     real_ip_header      {{ $cfg.ForwardedForHeader }};
@@ -359,7 +361,7 @@ http {
     log_format upstreaminfo {{ if $cfg.LogFormatEscapeNone }}escape=none {{ else if $cfg.LogFormatEscapeJSON }}escape=json {{ end }}'{{ $cfg.LogFormatUpstream }}';
 
     {{/* map urls that should not appear in access.log */}}
-    {{/* http://nginx.org/en/docs/http/ngx_http_log_module.html#access_log */}}
+    {{/* https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log */}}
     map $request_uri $loggable {
         {{ range $reqUri := $cfg.SkipAccessLogURLs }}
         {{ $reqUri }} 0;{{ end }}
@@ -388,7 +390,7 @@ http {
     map $http_upgrade $connection_upgrade {
         default          upgrade;
         {{ if (gt $cfg.UpstreamKeepaliveConnections 0) }}
-        # See http://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
+        # See https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
         ''               '';
         {{ else }}
         ''               close;
@@ -416,6 +418,39 @@ http {
         ''               "$realip_remote_addr";
         {{ end}}
     }
+
+    {{ end }}
+
+    {{ if and $cfg.UseForwardedHeaders $cfg.UseProxyProtocol }}
+    # When the proxy protocol is enabled, we cannot rely solely on the proxy protocol address
+    # due to potential proxy chain issues. Multiple proxies may modify the client IP before
+    # it reaches the ingress controller. We use the proxy-real-ip-cidr list to trust specific proxy
+    # addresses and determine the correct client IP from the forwarded headers.
+    #
+    # --------     --------------             ---------------------                       -----------------
+    # | User | --> | HTTP Proxy | -- http --> | TCP Load Balancer | -- proxy protocol --> | Ingress Nginx |
+    # --------     --------------             ---------------------                       -----------------
+    #
+    # The algorithm for determining the header to be used with the real_ip_header:
+    # 1. Check if the $proxy_protocol_addr is trusted (i.e., whether it's in the proxy-real-ip-cidr list).
+    # 2. If trusted, use the configured forwarded-for header (X-Forwarded-For by default).
+    # 3. If not trusted, fall back to using the $proxy_protocol_addr.
+    #
+    geo $proxy_protocol_addr $proxy_protocol_addr_trusted {
+        default           0;
+        {{ range $trusted_ip := $cfg.ProxyRealIPCIDR }}
+        {{ $trusted_ip }} 1;
+        {{ end }}
+    }
+
+    map $proxy_protocol_addr_trusted $forwarded_for_proxy_protocol {
+        default   $proxy_protocol_addr;
+        1         {{ buildForwardedFor $cfg.ForwardedForHeader }};
+    }
+
+    # The realip module does not support variables for the real_ip_header directive
+    # so we need to define a custom header.
+    more_set_input_headers "{{ $cfg.ForwardedForProxyProtocolHeader }}: $forwarded_for_proxy_protocol";
 
     {{ end }}
 
@@ -455,7 +490,7 @@ http {
     {{ end }}
 
     {{ if not (empty $cfg.SSLDHParam) }}
-    # allow custom DH file http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_dhparam
+    # allow custom DH file https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_dhparam
     ssl_dhparam {{ $cfg.SSLDHParam }};
     {{ end }}
 
@@ -467,6 +502,10 @@ http {
 
     {{ if and $cfg.CustomHTTPErrors (not $cfg.DisableProxyInterceptErrors) }}
     proxy_intercept_errors on;
+    {{ end }}
+
+    {{ if $cfg.RelativeRedirects }}
+    absolute_redirect off;
     {{ end }}
 
     {{ range $errCode := $cfg.CustomHTTPErrors }}
@@ -1047,6 +1086,9 @@ stream {
             {{ end }}
             proxy_buffer_size                       {{ $location.Proxy.BufferSize }};
             proxy_buffers                           {{ $location.Proxy.BuffersNumber }} {{ $location.Proxy.BufferSize }};
+            {{ if $location.Proxy.BusyBuffersSize }}
+            proxy_busy_buffers_size                 {{ $location.Proxy.BusyBuffersSize }};
+            {{ end }}
             proxy_request_buffering                 {{ $location.Proxy.RequestBuffering }};
 
             proxy_ssl_server_name       on;
@@ -1081,7 +1123,7 @@ stream {
             # The target is an upstream with HTTP keepalive, that is why the
             # Connection header is cleared and the HTTP version is set to 1.1 as
             # the Nginx documentation suggests:
-            # http://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
+            # https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             set $target {{ changeHostPort $externalAuth.URL $authUpstreamName }};
@@ -1195,20 +1237,10 @@ stream {
             {{- end }}
             # `auth_request` module does not support HTTP keepalives in upstream block:
             # https://trac.nginx.org/nginx/ticket/1579
-            access_by_lua_block {
-                local res = ngx.location.capture('{{ $authPath }}', { method = ngx.HTTP_GET, body = '', share_all_vars = {{ $externalAuth.KeepaliveShareVars }} })
-                if res.status == ngx.HTTP_OK then
-                    ngx.var.auth_cookie = res.header['Set-Cookie']
-                    {{- range $line := buildAuthUpstreamLuaHeaders $externalAuth.ResponseHeaders }}
-                    {{ $line }}
-                    {{- end }}
-                    return
-                end
-                if res.status == ngx.HTTP_UNAUTHORIZED or res.status == ngx.HTTP_FORBIDDEN then
-                    ngx.exit(res.status)
-                end
-                ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
-            }
+            set $auth_path '{{ $authPath }}';
+            set $auth_keepalive_share_vars {{ $externalAuth.KeepaliveShareVars }};
+            set $auth_response_headers '{{ buildAuthUpstreamLuaHeaders $externalAuth.ResponseHeaders }}';
+            access_by_lua_file /etc/nginx/lua/nginx/ngx_conf_external_auth.lua;
             {{ else }}
             auth_request        {{ $authPath }};
             auth_request_set    $auth_cookie $upstream_http_set_cookie;
@@ -1294,7 +1326,9 @@ stream {
             {{ $proxySetHeader }} X-Scheme               $pass_access_scheme;
 
             # Pass the original X-Forwarded-For
-            {{ $proxySetHeader }} X-Original-Forwarded-For {{ buildForwardedFor $all.Cfg.ForwardedForHeader }};
+            {{ $proxySetHeader }} X-Original-Forwarded-For  {{ buildForwardedFor $all.Cfg.ForwardedForHeader }};
+            # Pass the original X-Forwarded-Host
+            {{ $proxySetHeader }} X-Original-Forwarded-Host {{ buildForwardedHost $all.Cfg.ForwardedHostHeader }};
 
             # mitigate HTTPoxy Vulnerability
             # https://www.nginx.com/blog/mitigating-the-httpoxy-vulnerability-with-nginx/
@@ -1312,6 +1346,9 @@ stream {
             proxy_buffering                         {{ $location.Proxy.ProxyBuffering }};
             proxy_buffer_size                       {{ $location.Proxy.BufferSize }};
             proxy_buffers                           {{ $location.Proxy.BuffersNumber }} {{ $location.Proxy.BufferSize }};
+            {{ if $location.Proxy.BusyBuffersSize }}
+            proxy_busy_buffers_size                 {{ $location.Proxy.BusyBuffersSize }};
+            {{ end }}
             {{ if isValidByteSize $location.Proxy.ProxyMaxTempFileSize true }}
             proxy_max_temp_file_size                {{ $location.Proxy.ProxyMaxTempFileSize }};
             {{ end }}
@@ -1361,6 +1398,10 @@ stream {
 
             {{ if $location.Satisfy }}
             satisfy {{ $location.Satisfy }};
+            {{ end }}
+
+            {{ if $location.Redirect.Relative }}
+            absolute_redirect off;
             {{ end }}
 
             {{/* if a location-specific error override is set, add the proxy_intercept here */}}

@@ -156,6 +156,13 @@ func getIngressPodZone(svc *apiv1.Service) string {
 			}
 		}
 	}
+	if svc.Spec.TrafficDistribution != nil && *svc.Spec.TrafficDistribution == apiv1.ServiceTrafficDistributionPreferClose {
+		if foundZone, ok := k8s.IngressNodeDetails.GetLabels()[apiv1.LabelTopologyZone]; ok {
+			klog.V(3).Infof("Svc has traffic distribution enabled, try to use zone %q where controller pod is running for Service %q ", foundZone, svcKey)
+			return foundZone
+		}
+	}
+
 	return emptyZone
 }
 
@@ -185,7 +192,18 @@ func (n *NGINXController) syncIngress(interface{}) error {
 	n.metricCollector.SetSSLExpireTime(servers)
 	n.metricCollector.SetSSLInfo(servers)
 
+	hash, err := hashstructure.Hash(pcfg, hashstructure.FormatV1, &hashstructure.HashOptions{
+		TagName: "json",
+	})
+	if err != nil {
+		klog.Errorf("unexpected error hashing configuration: %v", err)
+	}
+
 	if n.runningConfig.Equal(pcfg) {
+		if !n.lastConfigSuccess {
+			n.metricCollector.ConfigSuccess(hash, true)
+			n.lastConfigSuccess = true
+		}
 		klog.V(3).Infof("No configuration change detected, skipping backend reload")
 		return nil
 	}
@@ -195,19 +213,13 @@ func (n *NGINXController) syncIngress(interface{}) error {
 	if !utilingress.IsDynamicConfigurationEnough(pcfg, n.runningConfig) {
 		klog.InfoS("Configuration changes detected, backend reload required")
 
-		hash, err := hashstructure.Hash(pcfg, hashstructure.FormatV1, &hashstructure.HashOptions{
-			TagName: "json",
-		})
-		if err != nil {
-			klog.Errorf("unexpected error hashing configuration: %v", err)
-		}
-
 		pcfg.ConfigurationChecksum = fmt.Sprintf("%v", hash)
 
 		err = n.OnUpdate(*pcfg)
 		if err != nil {
 			n.metricCollector.IncReloadErrorCount()
 			n.metricCollector.ConfigSuccess(hash, false)
+			n.lastConfigSuccess = false
 			klog.Errorf("Unexpected failure reloading the backend:\n%v", err)
 			n.recorder.Eventf(k8s.IngressPodDetails, apiv1.EventTypeWarning, "RELOAD", fmt.Sprintf("Error reloading NGINX: %v", err))
 			return err
@@ -216,6 +228,7 @@ func (n *NGINXController) syncIngress(interface{}) error {
 		klog.InfoS("Backend successfully reloaded")
 		n.metricCollector.ConfigSuccess(hash, true)
 		n.metricCollector.IncReloadCount()
+		n.lastConfigSuccess = true
 
 		n.recorder.Eventf(k8s.IngressPodDetails, apiv1.EventTypeNormal, "RELOAD", "NGINX reload triggered due to a change in configuration")
 	}
@@ -236,7 +249,7 @@ func (n *NGINXController) syncIngress(interface{}) error {
 	}
 
 	retriesRemaining := retry.Steps
-	err := wait.ExponentialBackoff(retry, func() (bool, error) {
+	err = wait.ExponentialBackoff(retry, func() (bool, error) {
 		err := n.configureDynamically(pcfg)
 		if err == nil {
 			klog.V(2).Infof("Dynamic reconfiguration succeeded.")
@@ -1259,6 +1272,7 @@ func (n *NGINXController) createServers(data []*ingress.Ingress,
 		ReadTimeout:          bdef.ProxyReadTimeout,
 		BuffersNumber:        bdef.ProxyBuffersNumber,
 		BufferSize:           bdef.ProxyBufferSize,
+		BusyBuffersSize:      bdef.ProxyBusyBuffersSize,
 		CookieDomain:         bdef.ProxyCookieDomain,
 		CookiePath:           bdef.ProxyCookiePath,
 		NextUpstream:         bdef.ProxyNextUpstream,
@@ -1820,16 +1834,14 @@ func checkOverlap(ing *networking.Ingress, servers []*ingress.Server) error {
 				continue
 			}
 
-			// same ingress
-			for _, existing := range existingIngresses {
-				if existing.ObjectMeta.Namespace == ing.ObjectMeta.Namespace && existing.ObjectMeta.Name == ing.ObjectMeta.Name {
-					return nil
-				}
-			}
-
 			// path overlap. Check if one of the ingresses has a canary annotation
 			isCanaryEnabled, annotationErr := parser.GetBoolAnnotation("canary", ing, canary.CanaryAnnotations.Annotations)
 			for _, existing := range existingIngresses {
+				if existing.ObjectMeta.Namespace == ing.ObjectMeta.Namespace && existing.ObjectMeta.Name == ing.ObjectMeta.Name {
+					// same ingress
+					continue
+				}
+
 				isExistingCanaryEnabled, existingAnnotationErr := parser.GetBoolAnnotation("canary", existing, canary.CanaryAnnotations.Annotations)
 
 				if isCanaryEnabled && isExistingCanaryEnabled {
@@ -1842,7 +1854,6 @@ func checkOverlap(ing *networking.Ingress, servers []*ingress.Server) error {
 			}
 
 			// no overlap
-			return nil
 		}
 	}
 

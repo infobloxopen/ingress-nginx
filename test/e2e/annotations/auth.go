@@ -308,7 +308,7 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 			})
 	})
 
-	ginkgo.It(`should set "proxy_set_header 'My-Custom-Header' '42';" when auth-headers are set`, func() {
+	ginkgo.It(`should set "proxy_set_header "My-Custom-Header" "42";" when auth-headers are set`, func() {
 		host := authHost
 
 		annotations := map[string]string{
@@ -325,7 +325,7 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 
 		f.WaitForNginxServer(host,
 			func(server string) bool {
-				return strings.Contains(server, `proxy_set_header 'My-Custom-Header' '42';`)
+				return strings.Contains(server, `proxy_set_header "My-Custom-Header" "42";`)
 			})
 	})
 
@@ -653,7 +653,7 @@ http {
 				func(server string) bool {
 					return strings.Contains(server, `upstream auth-external-auth`) &&
 						strings.Contains(server, `keepalive 10;`) &&
-						strings.Contains(server, `share_all_vars = false`)
+						strings.Contains(server, `set $auth_keepalive_share_vars false;`)
 				})
 		})
 
@@ -673,7 +673,7 @@ http {
 				func(server string) bool {
 					return strings.Contains(server, `upstream auth-external-auth`) &&
 						strings.Contains(server, `keepalive 10;`) &&
-						strings.Contains(server, `share_all_vars = true`)
+						strings.Contains(server, `set $auth_keepalive_share_vars true;`)
 				})
 		})
 	})
