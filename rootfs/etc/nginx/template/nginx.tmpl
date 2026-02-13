@@ -599,7 +599,7 @@ http {
     {{ range $redirect := .RedirectServers }}
     ## start server {{ $redirect.From }}
     server {
-        server_name {{ $redirect.From }};
+        server_name {{ $redirect.From | quote }};
 
         {{ buildHTTPListener  $all $redirect.From }}
         {{ buildHTTPSListener $all $redirect.From }}
@@ -646,7 +646,7 @@ http {
     {{ range $server := $servers }}
     ## start server {{ $server.Hostname }}
     server {
-        server_name {{ buildServerName $server.Hostname }} {{range $server.Aliases }}{{ . }} {{ end }};
+        server_name {{ buildServerName $server.Hostname | quote }} {{ range $server.Aliases }}"{{ sanitizeQuotedRegex . }}" {{ end }};
 
         {{ if $cfg.UseHTTP2 }}
             http2 on;
@@ -1051,6 +1051,7 @@ stream {
             # resumes it has the correct value set for this variable so that Lua can pick backend correctly
             set $proxy_upstream_name {{ buildUpstreamName $location | quote }};
 
+            proxy_intercept_errors      off;
             proxy_pass_request_body     off;
             proxy_set_header            Content-Length          "";
             proxy_set_header            X-Forwarded-Proto       "";

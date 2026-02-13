@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # From https://github.com/nginx/alpine-fips/blob/main/Dockerfile
-ARG BUILD_OS=alpine:3.22
+ARG BUILD_OS=alpine:3.23
 ARG OPENSSL_VERSION=3.0.9
 
 FROM ${BUILD_OS} AS alpine-fips
